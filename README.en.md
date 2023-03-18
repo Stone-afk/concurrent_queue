@@ -1,7 +1,7 @@
 # concurrent_queue
 
 #### Description
-基于go实现的并发队列
+Implementation of concurrent queues based on go
 
 #### Software Architecture
 Software architecture description
