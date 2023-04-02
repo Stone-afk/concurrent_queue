@@ -137,15 +137,56 @@ func (c *cond) WaitTimeout(ctx context.Context) error {
 
 type ConcurrentArrayBlockingQueueV2[T any] struct {
 	data  []T
-	mutex *sync.Mutex
+	mutex *sync.RWMutex
 
 	maxSize int
 
 	notEmptyCond *cond
 	notFullCond  *cond
+
+	count int
+	head int
+	tail int
+
+	zero T
 }
 
 func NewConcurrentArrayBlockingQueueV2[T any](capacity int) *ConcurrentArrayBlockingQueueV2[T] {
-	res := &ConcurrentArrayBlockingQueueV2[T]{}
+	m := &sync.RWMutex{}
+	res := &ConcurrentArrayBlockingQueueV2[T]{
+		data:    make([]T, 0, capacity),
+		mutex:   m,
+		maxSize: capacity,
+		notEmptyCond: &cond{
+			Cond: sync.NewCond(m),
+		},
+		notFullCond: &cond{
+			Cond: sync.NewCond(m),
+		},
+	}
 	return res
+}
+
+func (c *ConcurrentArrayBlockingQueueV2[T]) IsFull() bool {
+	c.mutex.Lock()
+	defer c.mutex.Unlock()
+	return c.isFull()
+}
+
+func (c *ConcurrentArrayBlockingQueueV2[T]) isFull() bool {
+	return len(c.data) == c.maxSize
+}
+
+func (c *ConcurrentArrayBlockingQueueV2[T]) IsEmpty() bool {
+	c.mutex.Lock()
+	defer c.mutex.Unlock()
+	return c.isEmpty()
+}
+
+func (c *ConcurrentArrayBlockingQueueV2[T]) isEmpty() bool {
+	return len(c.data) == 0
+}
+
+func (c *ConcurrentArrayBlockingQueueV2[T]) Len() uint64 {
+	return uint64(len(c.data))
 }
