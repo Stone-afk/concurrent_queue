@@ -4,6 +4,8 @@ import (
 	"context"
 	"golang.org/x/sync/semaphore"
 	"sync"
+	"sync/atomic"
+	"unsafe"
 )
 
 // ConcurrentArrayBlockingQueue 有界并发阻塞队列
@@ -29,8 +31,8 @@ type ConcurrentArrayBlockingQueueV1[T any] struct {
 
 	maxSize int
 
-	notEmptyCond *cond
-	notFullCond  *cond
+	notEmptyCond *condV1
+	notFullCond  *condV1
 }
 
 func NewConcurrentArrayBlockingQueueV1[T any](capacity int) *ConcurrentArrayBlockingQueueV1[T] {
@@ -39,10 +41,10 @@ func NewConcurrentArrayBlockingQueueV1[T any](capacity int) *ConcurrentArrayBloc
 		data:    make([]T, 0, capacity),
 		mutex:   m,
 		maxSize: capacity,
-		notEmptyCond: &cond{
+		notEmptyCond: &condV1{
 			Cond: sync.NewCond(m),
 		},
-		notFullCond: &cond{
+		notFullCond: &condV1{
 			Cond: sync.NewCond(m),
 		},
 	}
@@ -110,11 +112,11 @@ func (c *ConcurrentArrayBlockingQueueV1[T]) Len() uint64 {
 	return uint64(len(c.data))
 }
 
-type cond struct {
+type condV1 struct {
 	*sync.Cond
 }
 
-func (c *cond) WaitTimeout(ctx context.Context) error {
+func (c *condV1) WaitTimeout(ctx context.Context) error {
 	ch := make(chan struct{})
 	go func() {
 		c.Wait()
@@ -141,12 +143,12 @@ type ConcurrentArrayBlockingQueueV2[T any] struct {
 
 	maxSize int
 
-	notEmptyCond *cond
-	notFullCond  *cond
+	notEmptyCond *CondV2
+	notFullCond  *CondV2
 
 	count int
-	head int
-	tail int
+	head  int
+	tail  int
 
 	zero T
 }
@@ -157,12 +159,6 @@ func NewConcurrentArrayBlockingQueueV2[T any](capacity int) *ConcurrentArrayBloc
 		data:    make([]T, 0, capacity),
 		mutex:   m,
 		maxSize: capacity,
-		notEmptyCond: &cond{
-			Cond: sync.NewCond(m),
-		},
-		notFullCond: &cond{
-			Cond: sync.NewCond(m),
-		},
 	}
 	return res
 }
@@ -189,4 +185,33 @@ func (c *ConcurrentArrayBlockingQueueV2[T]) isEmpty() bool {
 
 func (c *ConcurrentArrayBlockingQueueV2[T]) Len() uint64 {
 	return uint64(len(c.data))
+}
+
+type CondV2 struct {
+	L  sync.Locker
+	ch unsafe.Pointer
+}
+
+func NewCond(l sync.Locker) *CondV2 {
+	c := &CondV2{L: l}
+	ch := make(chan struct{})
+	c.ch = unsafe.Pointer(&ch)
+	return c
+}
+
+func (c *CondV2) WaitTimeout(ctx context.Context) error {
+	panic("completing")
+}
+
+func (c *CondV2) Broadcast() error {
+	panic("completing")
+}
+
+func (c *CondV2) NotifyChan() <-chan struct{} {
+	uPtr := atomic.LoadPointer(&c.ch)
+	//chPtr := (*chan struct{})(uPtr)
+	//ch := *chPtr
+	//return ch
+	return *((*chan struct{})(uPtr))
+
 }
