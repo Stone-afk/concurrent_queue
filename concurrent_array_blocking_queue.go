@@ -199,14 +199,23 @@ func NewCond(l sync.Locker) *CondV2 {
 	return c
 }
 
+// Wait for Broadcast calls. Similar to regular sync.Cond, this unlocks the underlying
+// locker first, waits on changes and re-locks it before returning.
+func (c *CondV2) Wait() error {
+	panic("completing")
+}
+
+// WaitTimeout Same as Wait() call, but will only wait up to a given timeout.
 func (c *CondV2) WaitTimeout(ctx context.Context) error {
 	panic("completing")
 }
 
+// Broadcast call notifies everyone that something has changed.
 func (c *CondV2) Broadcast() error {
 	panic("completing")
 }
 
+// NotifyChan Returns a channel that can be used to wait for next Broadcast() call.
 func (c *CondV2) NotifyChan() <-chan struct{} {
 	uPtr := atomic.LoadPointer(&c.ch)
 	//chPtr := (*chan struct{})(uPtr)
