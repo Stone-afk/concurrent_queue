@@ -205,14 +205,19 @@ func (c *CondV2) Wait() error {
 	panic("completing")
 }
 
-// WaitTimeout Same as Wait() call, but will only wait up to a given timeout.
-func (c *CondV2) WaitTimeout(ctx context.Context) error {
+// WaitWithTimeout Same as Wait() call, but will only wait up to a given timeout.
+func (c *CondV2) WaitWithTimeout(ctx context.Context) error {
 	panic("completing")
 }
 
 // Broadcast call notifies everyone that something has changed.
-func (c *CondV2) Broadcast() error {
-	panic("completing")
+func (c *CondV2) Broadcast() {
+	ch := make(chan struct{})
+	ptrOld := atomic.SwapPointer(&c.ch, unsafe.Pointer(&ch))
+	//n := *((*chan struct{})(ptrOld))
+	//close(n)
+	close(*((*chan struct{})(ptrOld)))
+
 }
 
 // NotifyChan Returns a channel that can be used to wait for next Broadcast() call.
