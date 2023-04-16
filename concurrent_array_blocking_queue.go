@@ -203,14 +203,26 @@ func NewCond(l sync.Locker) *CondV2 {
 // locker first, waits on changes and re-locks it before returning.
 func (c *CondV2) Wait() {
 	ch := c.NotifyChan()
-	c.L.Lock()
-	<-ch
 	c.L.Unlock()
+	<-ch
+	c.L.Lock()
 }
 
 // WaitWithTimeout Same as Wait() call, but will only wait up to a given timeout.
 func (c *CondV2) WaitWithTimeout(ctx context.Context) error {
-	panic("completing")
+	if ctx.Err() != nil {
+		return ctx.Err()
+	}
+	ch := c.NotifyChan()
+	c.L.Unlock()
+	select {
+	case <-ch:
+		c.L.Lock()
+		return nil
+	case <-ctx.Done():
+		c.L.Lock()
+		return ctx.Err()
+	}
 }
 
 // Broadcast call notifies everyone that something has changed.
