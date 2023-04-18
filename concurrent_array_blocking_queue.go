@@ -156,11 +156,21 @@ type ConcurrentArrayBlockingQueueV2[T any] struct {
 func NewConcurrentArrayBlockingQueueV2[T any](capacity int) *ConcurrentArrayBlockingQueueV2[T] {
 	m := &sync.RWMutex{}
 	res := &ConcurrentArrayBlockingQueueV2[T]{
-		data:    make([]T, 0, capacity),
-		mutex:   m,
-		maxSize: capacity,
+		data:         make([]T, 0, capacity),
+		mutex:        m,
+		maxSize:      capacity,
+		notEmptyCond: NewCond(m),
+		notFullCond:  NewCond(m),
 	}
 	return res
+}
+
+func (c *ConcurrentArrayBlockingQueueV2[T]) Enqueue(t T) error {
+	panic("`Enqueue` must implemented")
+}
+
+func (c *ConcurrentArrayBlockingQueueV2[T]) Dequeue() (T, error) {
+	panic("`Dequeue` must implemented")
 }
 
 func (c *ConcurrentArrayBlockingQueueV2[T]) IsFull() bool {
