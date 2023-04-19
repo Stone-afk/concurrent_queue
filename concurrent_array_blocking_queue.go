@@ -202,7 +202,13 @@ func (c *ConcurrentArrayBlockingQueueV2[T]) Dequeue(ctx context.Context) (T, err
 		}
 	}
 
-	var t T
+	t := c.data[c.head]
+	c.data[c.head] = c.zero
+	c.head++
+	c.count--
+	if c.head == c.maxSize {
+		c.head = 0
+	}
 	c.notFullCond.Broadcast()
 	c.mutex.Unlock()
 	// 没有人等 notFull 的信号，这一句就会阻塞住
