@@ -165,12 +165,48 @@ func NewConcurrentArrayBlockingQueueV2[T any](capacity int) *ConcurrentArrayBloc
 	return res
 }
 
-func (c *ConcurrentArrayBlockingQueueV2[T]) Enqueue(t T) error {
-	panic("`Enqueue` must implemented")
+func (c *ConcurrentArrayBlockingQueueV2[T]) Enqueue(ctx context.Context, data T) error {
+	if ctx.Err() != nil {
+		return ctx.Err()
+	}
+	c.mutex.Lock()
+	for c.isFull() {
+		err := c.notFullCond.WaitWithTimeout(ctx)
+		if err != nil {
+			return err
+		}
+	}
+
+	c.data[c.tail] = data
+	c.tail++
+	c.count++
+	if c.tail == c.maxSize {
+		c.tail = 0
+	}
+
+	c.notEmptyCond.Broadcast()
+	c.mutex.Unlock()
+	return nil
 }
 
-func (c *ConcurrentArrayBlockingQueueV2[T]) Dequeue() (T, error) {
-	panic("`Dequeue` must implemented")
+func (c *ConcurrentArrayBlockingQueueV2[T]) Dequeue(ctx context.Context) (T, error) {
+	if ctx.Err() != nil {
+		var t T
+		return t, ctx.Err()
+	}
+	c.mutex.Lock()
+	for c.IsEmpty() {
+		if err := c.notEmptyCond.WaitWithTimeout(ctx); err != nil {
+			var t T
+			return t, err
+		}
+	}
+
+	var t T
+	c.notFullCond.Broadcast()
+	c.mutex.Unlock()
+	// 没有人等 notFull 的信号，这一句就会阻塞住
+	return t, nil
 }
 
 func (c *ConcurrentArrayBlockingQueueV2[T]) IsFull() bool {
