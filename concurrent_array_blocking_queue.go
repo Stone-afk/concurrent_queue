@@ -71,13 +71,15 @@ func (c *ConcurrentArrayBlockingQueueV1[T]) Enqueue(ctx context.Context, t T) er
 
 func (c *ConcurrentArrayBlockingQueueV1[T]) Dequeue(ctx context.Context) (T, error) {
 	if ctx.Err() != nil {
-		return nil, ctx.Err()
+		var t T
+		return t, ctx.Err()
 	}
 	c.mutex.Lock()
 	if c.isEmpty() {
 		err := c.notEmptyCond.WaitTimeout(ctx)
 		if err != nil {
-			return nil, err
+			var t T
+			return t, err
 		}
 	}
 	// 没有人等 notFull 的信号，这一句就会阻塞住
@@ -156,7 +158,9 @@ type ConcurrentArrayBlockingQueueV2[T any] struct {
 func NewConcurrentArrayBlockingQueueV2[T any](capacity int) *ConcurrentArrayBlockingQueueV2[T] {
 	m := &sync.RWMutex{}
 	res := &ConcurrentArrayBlockingQueueV2[T]{
-		data:         make([]T, 0, capacity),
+		// 即便是 ring buffer，一次性分配完内存，也是有缺陷的
+		// 如果不想一开始就把所有的内存都分配好，可以用链表
+		data:         make([]T, capacity),
 		mutex:        m,
 		maxSize:      capacity,
 		notEmptyCond: NewCond(m),
@@ -195,7 +199,7 @@ func (c *ConcurrentArrayBlockingQueueV2[T]) Dequeue(ctx context.Context) (T, err
 		return t, ctx.Err()
 	}
 	c.mutex.Lock()
-	for c.IsEmpty() {
+	for c.isEmpty() {
 		if err := c.notEmptyCond.WaitWithTimeout(ctx); err != nil {
 			var t T
 			return t, err
@@ -222,7 +226,7 @@ func (c *ConcurrentArrayBlockingQueueV2[T]) IsFull() bool {
 }
 
 func (c *ConcurrentArrayBlockingQueueV2[T]) isFull() bool {
-	return len(c.data) == c.maxSize
+	return c.count == c.maxSize
 }
 
 func (c *ConcurrentArrayBlockingQueueV2[T]) IsEmpty() bool {
@@ -232,11 +236,13 @@ func (c *ConcurrentArrayBlockingQueueV2[T]) IsEmpty() bool {
 }
 
 func (c *ConcurrentArrayBlockingQueueV2[T]) isEmpty() bool {
-	return len(c.data) == 0
+	return c.count == 0
 }
 
 func (c *ConcurrentArrayBlockingQueueV2[T]) Len() uint64 {
-	return uint64(len(c.data))
+	c.mutex.Lock()
+	defer c.mutex.Unlock()
+	return uint64(c.count)
 }
 
 type CondV2 struct {
