@@ -1,6 +1,7 @@
 package concurrent_queue
 
 import (
+	"context"
 	"sync/atomic"
 	"unsafe"
 )
@@ -18,6 +19,30 @@ func NewConcurrentLinkedQueue[T any]() *ConcurrentLinkBlockingQueue[T] {
 		head: ptr,
 		tail: ptr,
 	}
+}
+
+func (c *ConcurrentLinkBlockingQueue[T]) Enqueue(ctx context.Context, data T) error {
+	newNode := &node[T]{val: data}
+	newNodePtr := unsafe.Pointer(newNode)
+
+	// 先改 tail
+	for {
+		if ctx.Err() != nil {
+			return ctx.Err()
+		}
+		tail := atomic.LoadPointer(&c.tail)
+		if atomic.CompareAndSwapPointer(&c.tail, tail, newNodePtr) {
+			tailNode := (*node[T])(tail)
+			atomic.StorePointer(&tailNode.next, newNodePtr)
+			atomic.AddUint64(&c.count, 1)
+			return nil
+		}
+	}
+}
+
+func (c *ConcurrentLinkBlockingQueue[T]) Dequeue(ctx context.Context) (T, error) {
+	// TODO implement me
+	panic("implement me")
 }
 
 func (c *ConcurrentLinkBlockingQueue[T]) IsFull() bool {
