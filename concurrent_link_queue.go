@@ -30,14 +30,39 @@ func (c *ConcurrentLinkBlockingQueue[T]) Enqueue(ctx context.Context, data T) er
 		if ctx.Err() != nil {
 			return ctx.Err()
 		}
+		// select tail; => tail = 4
 		tail := atomic.LoadPointer(&c.tail)
+		// 为什么不能这样写？
+		// tail = c.tail // 这种是非线程安全
+		// Update Set tail = 3 WHERE tail = 4
 		if atomic.CompareAndSwapPointer(&c.tail, tail, newNodePtr) {
+			// 在这一步，就要讲 tail.next 指向 c.tail
+			// tail.next = c.tail
 			tailNode := (*node[T])(tail)
+			// 你在这一步，c.tail 被人修改了
 			atomic.StorePointer(&tailNode.next, newNodePtr)
 			atomic.AddUint64(&c.count, 1)
 			return nil
 		}
 	}
+
+	// 先改 tail.next
+	// newNode := &node[T]{val: t}
+	// newPtr := unsafe.Pointer(newNode)
+	// for {
+	// 	tailPtr := atomic.LoadPointer(&c.tail)
+	// 	tail := (*node[T])(tailPtr)
+	// 	tailNext := atomic.LoadPointer(&tail.next)
+	// 	if tailNext != nil {
+	// 		// 已经被人修改了，我们不需要修复，因为预期中修改的那个人会把 c.tail 指过去
+	// 		continue
+	// 	}
+	// 	if atomic.CompareAndSwapPointer(&tail.next, tailNext, newPtr) {
+	// 		// 如果失败也不用担心，说明有人抢先一步了
+	// 		atomic.CompareAndSwapPointer(&c.tail, tailPtr, newPtr)
+	// 		return nil
+	// 	}
+	// }
 }
 
 func (c *ConcurrentLinkBlockingQueue[T]) Dequeue(ctx context.Context) (T, error) {
