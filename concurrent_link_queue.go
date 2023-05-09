@@ -91,15 +91,15 @@ func (c *ConcurrentLinkBlockingQueue[T]) Dequeue(ctx context.Context) (T, error)
 	}
 }
 
-func (c *ConcurrentLinkBlockingQueue[T]) IsFull() bool {
-	// TODO implement me
-	panic("implement me")
-}
-
-func (c *ConcurrentLinkBlockingQueue[T]) IsEmpty() bool {
-	// TODO implement me
-	panic("implement me")
-}
+//func (c *ConcurrentLinkBlockingQueue[T]) IsFull() bool {
+//	// TODO implement me
+//	panic("implement me")
+//}
+//
+//func (c *ConcurrentLinkBlockingQueue[T]) IsEmpty() bool {
+//	// TODO implement me
+//	panic("implement me")
+//}
 
 func (c *ConcurrentLinkBlockingQueue[T]) Len() uint64 {
 	// 在你读的过程中，就被人改了

@@ -32,23 +32,19 @@ func NewPriorityQueue[T any](capacity int, compare Comparator[T]) *PriorityQueue
 }
 
 func (p *PriorityQueue[T]) Len() int {
-	// TODO implement me
-	panic("implement me")
+	return len(p.data) - 1
 }
 
 func (p *PriorityQueue[T]) Cap() int {
-	// TODO implement me
-	panic("implement me")
+	return p.capacity
 }
 
 func (p *PriorityQueue[T]) IsEmpty() bool {
-	// TODO implement me
-	panic("implement me")
+	return len(p.data) < 2
 }
 
 func (p *PriorityQueue[T]) IsFull() bool {
-	// TODO implement me
-	panic("implement me")
+	return p.capacity > 0 && len(p.data)-1 == p.capacity
 }
 
 func (p *PriorityQueue[T]) Peek() (T, error) {
