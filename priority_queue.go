@@ -48,16 +48,55 @@ func (p *PriorityQueue[T]) IsFull() bool {
 }
 
 func (p *PriorityQueue[T]) Peek() (T, error) {
-	// TODO implement me
-	panic("implement me")
+	if p.IsEmpty() {
+		var t T
+		return t, ErrEmptyQueue
+	}
+	return p.data[1], nil
 }
 
-func (p *PriorityQueue[T]) Enqueue(ctx context.Context, t T) error {
-	// TODO implement me
-	panic("implement me")
+func (p *PriorityQueue[T]) Enqueue(t T) error {
+	if p.IsFull() {
+		return ErrOutOfCapacity
+	}
+
+	p.data = append(p.data, t)
+	node, parent := len(p.data)-1, (len(p.data)-1)/2
+	for parent > 0 && p.compare(p.data[node], p.data[parent]) < 0 {
+		p.data[parent], p.data[node] = p.data[node], p.data[parent]
+		node = parent
+		parent = parent / 2
+	}
+
+	return nil
+}
+
+// heapify 下沉节点
+func (p *PriorityQueue[T]) heapify(data []T, n, i int) {
+	minPos := i
+	for {
+		if left := i * 2; left <= n && p.compare(data[left], data[minPos]) < 0 {
+			minPos = left
+		}
+		if right := i*2 + 1; right <= n && p.compare(data[right], data[minPos]) < 0 {
+			minPos = right
+		}
+		if minPos == i {
+			break
+		}
+		data[i], data[minPos] = data[minPos], data[i]
+		i = minPos
+	}
 }
 
 func (p *PriorityQueue[T]) Dequeue(ctx context.Context) (T, error) {
-	// TODO implement me
-	panic("implement me")
+	if p.IsEmpty() {
+		var t T
+		return t, ErrEmptyQueue
+	}
+	pop := p.data[1]
+	p.data[1] = p.data[len(p.data)-1]
+	p.data = p.data[:len(p.data)-1]
+	p.heapify(p.data, len(p.data)-1, 1)
+	return pop, nil
 }
