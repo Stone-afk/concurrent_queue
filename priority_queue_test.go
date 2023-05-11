@@ -7,6 +7,58 @@ import (
 	"github.com/stretchr/testify/assert"
 )
 
+func TestPriorityQueue_Enqueue(t *testing.T) {
+	testCases := []struct {
+		name     string
+		capacity int
+		data     []int
+		element  int
+		wantErr  error
+	}{
+		{
+			name:     "有界空队列",
+			capacity: 10,
+			data:     []int{},
+			element:  10,
+		},
+		{
+			name:     "有界满队列",
+			capacity: 6,
+			data:     []int{6, 5, 4, 3, 2, 1},
+			element:  10,
+			wantErr:  ErrOutOfCapacity,
+		},
+		{
+			name:     "有界非空不满队列",
+			capacity: 12,
+			data:     []int{6, 5, 4, 3, 2, 1},
+			element:  10,
+		},
+		{
+			name:     "无界空队列",
+			capacity: 0,
+			data:     []int{},
+			element:  10,
+		},
+		{
+			name:     "无界非空队列",
+			capacity: 0,
+			data:     []int{6, 5, 4, 3, 2, 1},
+			element:  10,
+		},
+	}
+	for _, tc := range testCases {
+		t.Run(tc.name, func(t *testing.T) {
+			q := priorityQueueOf(tc.capacity, tc.data, compare())
+			require.NotNil(t, q)
+			err := q.Enqueue(tc.element)
+			assert.Equal(t, tc.wantErr, err)
+			assert.Equal(t, tc.capacity, q.Cap())
+		})
+
+	}
+}
+
 func TestPriorityQueue_Peek(t *testing.T) {
 	testCases := []struct {
 		name     string
@@ -106,4 +158,15 @@ func compare() Comparator[int] {
 		}
 		return 1
 	}
+}
+
+func priorityQueueOf(capacity int, data []int, compare Comparator[int]) *PriorityQueue[int] {
+	q := NewPriorityQueue[int](capacity, compare)
+	for _, el := range data {
+		err := q.Enqueue(el)
+		if err != nil {
+			return nil
+		}
+	}
+	return q
 }
