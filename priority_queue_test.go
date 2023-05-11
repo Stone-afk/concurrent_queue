@@ -1,10 +1,50 @@
 package concurrent_queue
 
 import (
+	"github.com/stretchr/testify/require"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
 )
+
+func TestPriorityQueue_Peek(t *testing.T) {
+	testCases := []struct {
+		name     string
+		capacity int
+		data     []int
+		wantErr  error
+	}{
+		{
+			name:     "有数据",
+			capacity: 0,
+			data:     []int{6, 5, 4, 3, 2, 1},
+			wantErr:  ErrEmptyQueue,
+		},
+		{
+			name:     "无数据",
+			capacity: 0,
+			data:     []int{},
+			wantErr:  ErrEmptyQueue,
+		},
+	}
+	for _, tc := range testCases {
+		t.Run(tc.name, func(t *testing.T) {
+			q := NewPriorityQueue[int](tc.capacity, compare())
+			for _, el := range tc.data {
+				err := q.Enqueue(el)
+				require.NoError(t, err)
+			}
+			for q.Len() > 0 {
+				peek, err := q.Peek()
+				assert.NoError(t, err)
+				el, _ := q.Dequeue()
+				assert.Equal(t, el, peek)
+			}
+			_, err := q.Peek()
+			assert.Equal(t, tc.wantErr, err)
+		})
+	}
+}
 
 func TestNewPriorityQueue(t *testing.T) {
 	data := []int{6, 5, 4, 3, 2, 1}
