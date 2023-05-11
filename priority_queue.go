@@ -1,7 +1,5 @@
 package concurrent_queue
 
-import "context"
-
 // Comparator 用于比较两个对象的大小 src < dst, 返回-1，src = dst, 返回0，src > dst, 返回1
 type Comparator[T any] func(src T, dst T) int
 
@@ -89,7 +87,7 @@ func (p *PriorityQueue[T]) heapify(data []T, n, i int) {
 	}
 }
 
-func (p *PriorityQueue[T]) Dequeue(ctx context.Context) (T, error) {
+func (p *PriorityQueue[T]) Dequeue() (T, error) {
 	if p.IsEmpty() {
 		var t T
 		return t, ErrEmptyQueue
