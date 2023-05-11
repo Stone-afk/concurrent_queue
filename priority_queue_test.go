@@ -7,6 +7,58 @@ import (
 	"github.com/stretchr/testify/assert"
 )
 
+func TestPriorityQueue_EnqueueHeapStruct(t *testing.T) {
+	data := []int{6, 5, 4, 3, 2, 1}
+	testCases := []struct {
+		name      string
+		capacity  int
+		data      []int
+		wantSlice []int
+		pivot     int
+		pivotData []int
+	}{
+		{
+			name:      "队列满",
+			capacity:  len(data),
+			data:      data,
+			pivot:     2,
+			pivotData: []int{0, 4, 6, 5},
+			wantSlice: []int{0, 1, 3, 2, 6, 4, 5},
+		},
+		{
+			name:      "队列不满",
+			capacity:  len(data) * 2,
+			data:      data,
+			pivot:     3,
+			pivotData: []int{0, 3, 4, 5, 6},
+			wantSlice: []int{0, 1, 3, 2, 6, 4, 5},
+		},
+		{
+			name:      "无界队列",
+			capacity:  0,
+			data:      data,
+			pivot:     3,
+			pivotData: []int{0, 3, 4, 5, 6},
+			wantSlice: []int{0, 1, 3, 2, 6, 4, 5},
+		},
+	}
+	for _, tc := range testCases {
+		t.Run(tc.name, func(t *testing.T) {
+			q := NewPriorityQueue[int](tc.capacity, compare())
+			for i, el := range tc.data {
+				require.NoError(t, q.Enqueue(el))
+				// 检查中途堆结构堆调整，是否符合预期
+				if i == tc.pivot {
+					assert.Equal(t, tc.pivotData, q.data)
+				}
+			}
+			// 检查最终堆结构，是否符合预期
+			assert.Equal(t, tc.wantSlice, q.data)
+		})
+
+	}
+}
+
 func TestPriorityQueue_EnqueueElement(t *testing.T) {
 	testCases := []struct {
 		name      string
