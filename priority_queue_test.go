@@ -7,6 +7,50 @@ import (
 	"github.com/stretchr/testify/assert"
 )
 
+func TestPriorityQueue_EnqueueElement(t *testing.T) {
+	testCases := []struct {
+		name      string
+		data      []int
+		element   int
+		wantSlice []int
+	}{
+		{
+			name:      "新加入的元素是最大的",
+			data:      []int{10, 8, 7, 6, 2},
+			element:   20,
+			wantSlice: []int{0, 2, 6, 8, 10, 7, 20},
+		},
+		{
+			name:      "新加入的元素是最小的",
+			data:      []int{10, 8, 7, 6, 2},
+			element:   1,
+			wantSlice: []int{0, 1, 6, 2, 10, 7, 8},
+		},
+		{
+			name:      "新加入的元素子区间中",
+			data:      []int{10, 8, 7, 6, 2},
+			element:   5,
+			wantSlice: []int{0, 2, 6, 5, 10, 7, 8},
+		},
+		{
+			name:      "新加入的元素与已有元素相同",
+			data:      []int{10, 8, 7, 6, 2},
+			element:   6,
+			wantSlice: []int{0, 2, 6, 6, 10, 7, 8},
+		},
+	}
+	for _, tc := range testCases {
+		t.Run(tc.name, func(t *testing.T) {
+			q := priorityQueueOf(0, tc.data, compare())
+			require.NotNil(t, q)
+			err := q.Enqueue(tc.element)
+			require.NoError(t, err)
+			assert.Equal(t, tc.wantSlice, q.data)
+		})
+
+	}
+}
+
 func TestPriorityQueue_Enqueue(t *testing.T) {
 	testCases := []struct {
 		name     string
