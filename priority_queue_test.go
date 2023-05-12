@@ -7,6 +7,48 @@ import (
 	"github.com/stretchr/testify/assert"
 )
 
+func TestPriorityQueue_Dequeue(t *testing.T) {
+	testCases := []struct {
+		name      string
+		data      []int
+		wantErr   error
+		wantVal   int
+		wantSlice []int
+	}{
+		{
+			name:    "空队列",
+			data:    []int{},
+			wantErr: ErrEmptyQueue,
+		},
+		{
+			name:      "只有一个元素",
+			data:      []int{10},
+			wantVal:   10,
+			wantSlice: []int{0},
+		},
+		{
+			name:      "many",
+			data:      []int{6, 5, 4, 3, 2, 1},
+			wantVal:   1,
+			wantSlice: []int{0, 2, 3, 5, 6, 4},
+		},
+	}
+
+	for _, tc := range testCases {
+		t.Run(tc.name, func(t *testing.T) {
+			q := priorityQueueOf(0, tc.data, compare())
+			require.NotNil(t, q)
+			val, err := q.Dequeue()
+			assert.Equal(t, tc.wantErr, err)
+			if err != nil {
+				return
+			}
+			assert.Equal(t, tc.wantSlice, q.data)
+			assert.Equal(t, tc.wantVal, val)
+		})
+	}
+}
+
 func TestPriorityQueue_EnqueueHeapStruct(t *testing.T) {
 	data := []int{6, 5, 4, 3, 2, 1}
 	testCases := []struct {
