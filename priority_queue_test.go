@@ -7,6 +7,52 @@ import (
 	"github.com/stretchr/testify/assert"
 )
 
+func TestPriorityQueue_DequeueComplexCheck(t *testing.T) {
+	testCases := []struct {
+		name     string
+		capacity int
+		data     []int
+		pivot    int
+		want     []int
+	}{
+		{
+			name:     "无边界",
+			capacity: 0,
+			data:     []int{6, 5, 4, 3, 2, 1},
+			pivot:    2,
+			want:     []int{0, 4, 6, 5},
+		},
+		{
+			name:     "有边界",
+			capacity: 6,
+			data:     []int{6, 5, 4, 3, 2, 1},
+			pivot:    3,
+			want:     []int{0, 5, 6},
+		},
+	}
+	for _, tc := range testCases {
+		t.Run(tc.name, func(t *testing.T) {
+			q := priorityQueueOf(tc.capacity, tc.data, compare())
+			require.NotNil(t, q)
+			i := 0
+			prev := -1
+			for q.Len() > 0 {
+				el, err := q.Dequeue()
+				require.NoError(t, err)
+				// 检查中途出队后，堆结构堆调整是否符合预期
+				if i == tc.pivot {
+					assert.Equal(t, tc.want, q.data)
+				}
+				// 检查出队是否有序
+				assert.LessOrEqual(t, prev, el)
+				prev = el
+				i++
+			}
+		})
+
+	}
+}
+
 func TestPriorityQueue_Dequeue(t *testing.T) {
 	testCases := []struct {
 		name      string
