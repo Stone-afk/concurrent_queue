@@ -3,6 +3,7 @@ package concurrent_queue
 import (
 	"context"
 	"errors"
+	"time"
 )
 
 var (
@@ -36,4 +37,9 @@ type BlockingQueue[T any] interface {
 	// 或者 context.Canceled 来判断入队失败的原因
 	// 注意，调用者必须使用 errors.Is 来判断，而不能直接使用 ==
 	Dequeue(ctx context.Context) (T, error)
+}
+
+type Delayable interface {
+	Delay() time.Duration
+	// Deadline() time.Time
 }
