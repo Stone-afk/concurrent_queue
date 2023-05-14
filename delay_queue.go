@@ -56,10 +56,10 @@ func (q *DelayQueue[T]) EnQueue(ctx context.Context, data T) error {
 			// if data.Deadline().Before(top.Deadline()) {
 			//
 			// }
-			q.dequeueSignal.broadcast()
+			q.enqueueSignal.broadcast()
 			return nil
 		case ErrOutOfCapacity:
-			signalCh := q.enqueueSignal.signalCh()
+			signalCh := q.dequeueSignal.signalCh()
 			// 阻塞，开始睡觉了
 			select {
 			case <-ctx.Done():
