@@ -4,6 +4,7 @@ import (
 	"context"
 	"fmt"
 	"sync"
+	"time"
 )
 
 type DelayQueue[T Delayable] struct {
@@ -68,15 +69,84 @@ func (q *DelayQueue[T]) EnQueue(ctx context.Context, data T) error {
 			}
 		default:
 			q.mutex.Unlock()
-			return fmt.Errorf("ekit: 延时队列入队的时候遇到未知错误 %w，请上报", err)
+			return fmt.Errorf("延时队列入队的时候遇到未知错误 %w，请上报", err)
 		}
 
 	}
 }
 
-func (q *DelayQueue[T]) DeQueue(ctx context.Context) error {
-	// TODO implement me
-	panic("implement me")
+func (q *DelayQueue[T]) DeQueue(ctx context.Context) (T, error) {
+	var timer *time.Timer
+	defer func() {
+		if timer != nil {
+			timer.Stop()
+		}
+	}()
+	for {
+		select {
+		case <-ctx.Done():
+			var t T
+			return t, ctx.Err()
+		default:
+		}
+
+		q.mutex.Lock()
+		// 主要是顾虑锁被人持有很久，以至于早就超时了
+		select {
+		case <-ctx.Done():
+			var t T
+			q.mutex.Unlock()
+			return t, ctx.Err()
+		default:
+		}
+		val, err := q.pq.Peek()
+		switch err {
+		case nil:
+			delayTime := val.Delay()
+			if delayTime <= 0 {
+				val, err = q.pq.Dequeue()
+				if err != nil {
+					var t T
+					q.mutex.Unlock()
+					return t, err
+				}
+				q.dequeueSignal.broadcast()
+				return val, nil
+			}
+			// 要在这里解锁
+			signalCh := q.enqueueSignal.signalCh()
+			if timer == nil {
+				timer = time.NewTimer(delayTime)
+			} else {
+				timer.Reset(delayTime)
+			}
+			select {
+			case <-ctx.Done():
+				var t T
+				return t, ctx.Err()
+			case <-timer.C:
+				// 在这里不能这么写，因为这里已经无锁保护了
+				// c.mu.Lock()
+				// val, err = c.pq.Dequeue()
+				// c.mu.Unlock()
+				// return val, err
+			case <-signalCh:
+			}
+		case ErrEmptyQueue:
+			signalCh := q.enqueueSignal.signalCh()
+			// 阻塞，开始 sleep
+			select {
+			case <-ctx.Done():
+				var t T
+				return t, ctx.Err()
+			case <-signalCh:
+			}
+		default:
+			q.mutex.Unlock()
+			var t T
+			return t, fmt.Errorf("延时队列出队的时候遇到未知错误 %w，请上报", err)
+		}
+	}
 }
 
 type cond struct {
