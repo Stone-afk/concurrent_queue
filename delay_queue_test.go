@@ -4,9 +4,185 @@ import (
 	"context"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
+	"golang.org/x/sync/errgroup"
 	"testing"
 	"time"
 )
+
+func TestDelayQueue_Dequeue(t *testing.T) {
+	t.Parallel()
+	now := time.Now()
+	testCases := []struct {
+		name    string
+		q       *DelayQueue[delayElem]
+		timeout time.Duration
+		wantVal int
+		wantErr error
+	}{
+		{
+			name: "dequeued",
+			q: newDelayQueue(t, delayElem{
+				deadline: now.Add(time.Millisecond * 10),
+				val:      11,
+			}),
+			timeout: time.Second,
+			wantVal: 11,
+		},
+		{
+			// 元素本身就已经过期了
+			name: "already deadline",
+			q: newDelayQueue(t, delayElem{
+				deadline: now.Add(-time.Millisecond * 10),
+				val:      11,
+			}),
+			timeout: time.Second,
+			wantVal: 11,
+		},
+		{
+			// 已经超时了的 context 设置
+			name: "invalid context",
+			q: newDelayQueue(t, delayElem{
+				deadline: now.Add(time.Millisecond * 10),
+				val:      11,
+			}),
+			timeout: -time.Second,
+			wantErr: context.DeadlineExceeded,
+		},
+		{
+			name:    "empty and timeout",
+			q:       NewDelayQueue[delayElem](10),
+			timeout: time.Second,
+			wantErr: context.DeadlineExceeded,
+		},
+		{
+			name: "not empty but timeout",
+			q: newDelayQueue(t, delayElem{
+				deadline: now.Add(time.Second * 10),
+				val:      11,
+			}),
+			timeout: time.Second,
+			wantErr: context.DeadlineExceeded,
+		},
+	}
+
+	for _, tt := range testCases {
+		tc := tt
+		t.Run(tc.name, func(t *testing.T) {
+			ctx, cancel := context.WithTimeout(context.Background(), tc.timeout)
+			defer cancel()
+			ele, err := tc.q.DeQueue(ctx)
+			assert.Equal(t, tc.wantErr, err)
+			if err != nil {
+				return
+			}
+			assert.Equal(t, tc.wantVal, ele.val)
+		})
+	}
+
+	// 最开始没有元素，然后进去了一个元素
+	t.Run("dequeue while enqueue", func(t *testing.T) {
+		q := NewDelayQueue[delayElem](3)
+		go func() {
+			time.Sleep(time.Millisecond * 500)
+			ctx, cancel := context.WithTimeout(context.Background(), time.Second)
+			defer cancel()
+			err := q.EnQueue(ctx, delayElem{
+				val:      123,
+				deadline: time.Now().Add(time.Millisecond * 100),
+			})
+			require.NoError(t, err)
+		}()
+		ctx, cancel := context.WithTimeout(context.Background(), time.Second)
+		defer cancel()
+		ele, err := q.DeQueue(ctx)
+		require.NoError(t, err)
+		require.Equal(t, 123, ele.val)
+	})
+
+	// 进去了一个更加短超时时间的元素
+	// 于是后面两个都会拿出来，但是时间短的会先拿出来
+	t.Run("enqueue short ele", func(t *testing.T) {
+		q := NewDelayQueue[delayElem](3)
+		// 长时间过期的元素
+		err := q.EnQueue(context.Background(), delayElem{
+			val:      234,
+			deadline: time.Now().Add(time.Second),
+		})
+		require.NoError(t, err)
+
+		go func() {
+			time.Sleep(time.Millisecond * 200)
+			ctx, cancel := context.WithTimeout(context.Background(), time.Second)
+			defer cancel()
+			err := q.EnQueue(ctx, delayElem{
+				val:      123,
+				deadline: time.Now().Add(time.Millisecond * 300),
+			})
+			require.NoError(t, err)
+		}()
+		ctx, cancel := context.WithTimeout(context.Background(), time.Second*2)
+		defer cancel()
+		// 先拿出短时间的
+		ele, err := q.DeQueue(ctx)
+		require.NoError(t, err)
+		require.Equal(t, 123, ele.val)
+		require.True(t, ele.deadline.Before(time.Now()))
+
+		// 再拿出长时间的
+		ele, err = q.DeQueue(ctx)
+		require.NoError(t, err)
+		require.Equal(t, 234, ele.val)
+		require.True(t, ele.deadline.Before(time.Now()))
+
+		// 没有元素了，会超时
+		_, err = q.DeQueue(ctx)
+		require.Equal(t, context.DeadlineExceeded, err)
+	})
+
+	t.Run("dequeue two elements concurrently with larger delay intervals", func(t *testing.T) {
+		t.Parallel()
+
+		capacity := 2
+		q := NewDelayQueue[delayElem](capacity)
+
+		// 使队列处于有元素状态，元素间的截止日期有较大时间差
+		elem1 := delayElem{
+			val:      10001,
+			deadline: time.Now().Add(50 * time.Millisecond),
+		}
+		require.NoError(t, q.EnQueue(context.Background(), elem1))
+
+		elem2 := delayElem{
+			val:      10002,
+			deadline: time.Now().Add(500 * time.Millisecond),
+		}
+		require.NoError(t, q.EnQueue(context.Background(), elem2))
+
+		// 并发出队，使调用者协程并发地按照较小截止日期的元素的延迟时间进行等待
+		elemsChan := make(chan delayElem, capacity)
+		var eg errgroup.Group
+		for i := 0; i < capacity; i++ {
+			eg.Go(func() error {
+				ele, err := q.DeQueue(context.Background())
+				elemsChan <- ele
+				return err
+			})
+		}
+
+		assert.NoError(t, eg.Wait())
+
+		// 一定先拿出短时间的
+		ele := <-elemsChan
+		require.Equal(t, elem1.val, ele.val)
+		require.True(t, ele.deadline.Before(time.Now()))
+
+		// 再拿出长时间的，因为并发原因多个调用者协程可能都等待具有较小截止日期的元素
+		// 防止后者未验证元素是否过期而直接将其出队
+		ele = <-elemsChan
+		require.Equal(t, elem2.val, ele.val)
+		require.True(t, ele.deadline.Before(time.Now()))
+	})
+}
 
 func TestDelayQueue_Enqueue(t *testing.T) {
 	t.Parallel()
