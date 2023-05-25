@@ -20,88 +20,88 @@ func TestPriorityQueue_Shrink(t *testing.T) {
 	testCases := []struct {
 		name        string
 		originCap   int
-		enqueueLoop int
-		dequeueLoop int
+		EnqueueLoop int
+		DequeueLoop int
 		expectCap   int
 		sliceCap    int
 	}{
 		{
 			name:        "有界，小于64",
 			originCap:   32,
-			enqueueLoop: 6,
-			dequeueLoop: 5,
+			EnqueueLoop: 6,
+			DequeueLoop: 5,
 			expectCap:   32,
 			sliceCap:    33,
 		},
 		{
 			name:        "有界，小于2048, 不足1/4",
 			originCap:   1000,
-			enqueueLoop: 20,
-			dequeueLoop: 5,
+			EnqueueLoop: 20,
+			DequeueLoop: 5,
 			expectCap:   1000,
 			sliceCap:    1001,
 		},
 		{
 			name:        "有界，小于2048, 超过1/4",
 			originCap:   1000,
-			enqueueLoop: 400,
-			dequeueLoop: 5,
+			EnqueueLoop: 400,
+			DequeueLoop: 5,
 			expectCap:   1000,
 			sliceCap:    1001,
 		},
 		{
 			name:        "有界，大于2048，不足一半",
 			originCap:   3000,
-			enqueueLoop: 400,
-			dequeueLoop: 40,
+			EnqueueLoop: 400,
+			DequeueLoop: 40,
 			expectCap:   3000,
 			sliceCap:    3001,
 		},
 		{
 			name:        "有界，大于2048，大于一半",
 			originCap:   3000,
-			enqueueLoop: 2000,
-			dequeueLoop: 5,
+			EnqueueLoop: 2000,
+			DequeueLoop: 5,
 			expectCap:   3000,
 			sliceCap:    3001,
 		},
 		{
 			name:        "无界，小于64",
 			originCap:   0,
-			enqueueLoop: 30,
-			dequeueLoop: 5,
+			EnqueueLoop: 30,
+			DequeueLoop: 5,
 			expectCap:   0,
 			sliceCap:    64,
 		},
 		{
 			name:        "无界，小于2048, 不足1/4",
 			originCap:   0,
-			enqueueLoop: 2000,
-			dequeueLoop: 1990,
+			EnqueueLoop: 2000,
+			DequeueLoop: 1990,
 			expectCap:   0,
 			sliceCap:    50,
 		},
 		{
 			name:        "无界，小于2048, 超过1/4",
 			originCap:   0,
-			enqueueLoop: 2000,
-			dequeueLoop: 600,
+			EnqueueLoop: 2000,
+			DequeueLoop: 600,
 			expectCap:   0,
 			sliceCap:    2560,
 		},
 		{
 			name:        "无界，大于2048，不足一半",
 			originCap:   0,
-			enqueueLoop: 3000,
-			dequeueLoop: 2000,
+			EnqueueLoop: 3000,
+			DequeueLoop: 2000,
 			expectCap:   0,
 			sliceCap:    1331,
 		},
 		{
 			name:        "无界，大于2048，大于一半",
 			originCap:   0,
-			enqueueLoop: 3000,
-			dequeueLoop: 5,
+			EnqueueLoop: 3000,
+			DequeueLoop: 5,
 			expectCap:   0,
 			sliceCap:    3408,
 		},
@@ -109,13 +109,13 @@ func TestPriorityQueue_Shrink(t *testing.T) {
 	for _, tc := range testCases {
 		t.Run(tc.name, func(t *testing.T) {
 			q := NewPriorityQueue[int](tc.originCap, compare)
-			for i := 0; i < tc.enqueueLoop; i++ {
+			for i := 0; i < tc.EnqueueLoop; i++ {
 				err := q.Enqueue(i)
 				if err != nil {
 					return
 				}
 			}
-			for i := 0; i < tc.dequeueLoop; i++ {
+			for i := 0; i < tc.DequeueLoop; i++ {
 				_, err := q.Dequeue()
 				if err != nil {
 					return

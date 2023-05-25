@@ -13,8 +13,8 @@ type ArrayBlockingQueue[T any] struct {
 	data  []T
 	mutex *sync.Mutex
 
-	enqueueCap *semaphore.Weighted
-	dequeueCap *semaphore.Weighted
+	EnqueueCap *semaphore.Weighted
+	DequeueCap *semaphore.Weighted
 }
 
 // NewArrayBlockingQueue 创建一个有界阻塞队列
