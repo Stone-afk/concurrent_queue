@@ -8,8 +8,8 @@ import (
 	"unsafe"
 )
 
-// ConcurrentArrayBlockingQueue 有界并发阻塞队列
-type ConcurrentArrayBlockingQueue[T any] struct {
+// ArrayBlockingQueue 有界并发阻塞队列
+type ArrayBlockingQueue[T any] struct {
 	data  []T
 	mutex *sync.Mutex
 
@@ -17,15 +17,15 @@ type ConcurrentArrayBlockingQueue[T any] struct {
 	dequeueCap *semaphore.Weighted
 }
 
-// NewConcurrentArrayBlockingQueue 创建一个有界阻塞队列
+// NewArrayBlockingQueue 创建一个有界阻塞队列
 // 容量会在最开始的时候就初始化好
 // capacity 必须为正数
-func NewConcurrentArrayBlockingQueue[T any](capacity int) *ConcurrentArrayBlockingQueue[T] {
-	res := &ConcurrentArrayBlockingQueue[T]{}
+func NewArrayBlockingQueue[T any](capacity int) *ArrayBlockingQueue[T] {
+	res := &ArrayBlockingQueue[T]{}
 	return res
 }
 
-type ConcurrentArrayBlockingQueueV1[T any] struct {
+type ArrayBlockingQueueV1[T any] struct {
 	data  []T
 	mutex *sync.Mutex
 
@@ -35,9 +35,9 @@ type ConcurrentArrayBlockingQueueV1[T any] struct {
 	notFullCond  *condV1
 }
 
-func NewConcurrentArrayBlockingQueueV1[T any](capacity int) *ConcurrentArrayBlockingQueueV1[T] {
+func NewArrayBlockingQueueV1[T any](capacity int) *ArrayBlockingQueueV1[T] {
 	m := &sync.Mutex{}
-	res := &ConcurrentArrayBlockingQueueV1[T]{
+	res := &ArrayBlockingQueueV1[T]{
 		data:    make([]T, 0, capacity),
 		mutex:   m,
 		maxSize: capacity,
@@ -51,7 +51,7 @@ func NewConcurrentArrayBlockingQueueV1[T any](capacity int) *ConcurrentArrayBloc
 	return res
 }
 
-func (c *ConcurrentArrayBlockingQueueV1[T]) Enqueue(ctx context.Context, t T) error {
+func (c *ArrayBlockingQueueV1[T]) Enqueue(ctx context.Context, t T) error {
 	if ctx.Err() != nil {
 		return ctx.Err()
 	}
@@ -69,7 +69,7 @@ func (c *ConcurrentArrayBlockingQueueV1[T]) Enqueue(ctx context.Context, t T) er
 	return nil
 }
 
-func (c *ConcurrentArrayBlockingQueueV1[T]) Dequeue(ctx context.Context) (T, error) {
+func (c *ArrayBlockingQueueV1[T]) Dequeue(ctx context.Context) (T, error) {
 	if ctx.Err() != nil {
 		var t T
 		return t, ctx.Err()
@@ -90,27 +90,27 @@ func (c *ConcurrentArrayBlockingQueueV1[T]) Dequeue(ctx context.Context) (T, err
 	return t, nil
 }
 
-func (c *ConcurrentArrayBlockingQueueV1[T]) IsFull() bool {
+func (c *ArrayBlockingQueueV1[T]) IsFull() bool {
 	c.mutex.Lock()
 	defer c.mutex.Unlock()
 	return c.isFull()
 }
 
-func (c *ConcurrentArrayBlockingQueueV1[T]) isFull() bool {
+func (c *ArrayBlockingQueueV1[T]) isFull() bool {
 	return len(c.data) == c.maxSize
 }
 
-func (c *ConcurrentArrayBlockingQueueV1[T]) IsEmpty() bool {
+func (c *ArrayBlockingQueueV1[T]) IsEmpty() bool {
 	c.mutex.Lock()
 	defer c.mutex.Unlock()
 	return c.isEmpty()
 }
 
-func (c *ConcurrentArrayBlockingQueueV1[T]) isEmpty() bool {
+func (c *ArrayBlockingQueueV1[T]) isEmpty() bool {
 	return len(c.data) == 0
 }
 
-func (c *ConcurrentArrayBlockingQueueV1[T]) Len() uint64 {
+func (c *ArrayBlockingQueueV1[T]) Len() uint64 {
 	return uint64(len(c.data))
 }
 
@@ -139,7 +139,7 @@ func (c *condV1) WaitTimeout(ctx context.Context) error {
 	}
 }
 
-type ConcurrentArrayBlockingQueueV2[T any] struct {
+type ArrayBlockingQueueV2[T any] struct {
 	data  []T
 	mutex *sync.RWMutex
 
@@ -155,9 +155,9 @@ type ConcurrentArrayBlockingQueueV2[T any] struct {
 	zero T
 }
 
-func NewConcurrentArrayBlockingQueueV2[T any](capacity int) *ConcurrentArrayBlockingQueueV2[T] {
+func NewArrayBlockingQueueV2[T any](capacity int) *ArrayBlockingQueueV2[T] {
 	m := &sync.RWMutex{}
-	res := &ConcurrentArrayBlockingQueueV2[T]{
+	res := &ArrayBlockingQueueV2[T]{
 		// 即便是 ring buffer，一次性分配完内存，也是有缺陷的
 		// 如果不想一开始就把所有的内存都分配好，可以用链表
 		data:         make([]T, capacity),
@@ -169,7 +169,7 @@ func NewConcurrentArrayBlockingQueueV2[T any](capacity int) *ConcurrentArrayBloc
 	return res
 }
 
-func (c *ConcurrentArrayBlockingQueueV2[T]) Enqueue(ctx context.Context, data T) error {
+func (c *ArrayBlockingQueueV2[T]) Enqueue(ctx context.Context, data T) error {
 	if ctx.Err() != nil {
 		return ctx.Err()
 	}
@@ -193,7 +193,7 @@ func (c *ConcurrentArrayBlockingQueueV2[T]) Enqueue(ctx context.Context, data T)
 	return nil
 }
 
-func (c *ConcurrentArrayBlockingQueueV2[T]) Dequeue(ctx context.Context) (T, error) {
+func (c *ArrayBlockingQueueV2[T]) Dequeue(ctx context.Context) (T, error) {
 	if ctx.Err() != nil {
 		var t T
 		return t, ctx.Err()
@@ -219,27 +219,27 @@ func (c *ConcurrentArrayBlockingQueueV2[T]) Dequeue(ctx context.Context) (T, err
 	return t, nil
 }
 
-func (c *ConcurrentArrayBlockingQueueV2[T]) IsFull() bool {
+func (c *ArrayBlockingQueueV2[T]) IsFull() bool {
 	c.mutex.Lock()
 	defer c.mutex.Unlock()
 	return c.isFull()
 }
 
-func (c *ConcurrentArrayBlockingQueueV2[T]) isFull() bool {
+func (c *ArrayBlockingQueueV2[T]) isFull() bool {
 	return c.count == c.maxSize
 }
 
-func (c *ConcurrentArrayBlockingQueueV2[T]) IsEmpty() bool {
+func (c *ArrayBlockingQueueV2[T]) IsEmpty() bool {
 	c.mutex.Lock()
 	defer c.mutex.Unlock()
 	return c.isEmpty()
 }
 
-func (c *ConcurrentArrayBlockingQueueV2[T]) isEmpty() bool {
+func (c *ArrayBlockingQueueV2[T]) isEmpty() bool {
 	return c.count == 0
 }
 
-func (c *ConcurrentArrayBlockingQueueV2[T]) Len() uint64 {
+func (c *ArrayBlockingQueueV2[T]) Len() uint64 {
 	c.mutex.Lock()
 	defer c.mutex.Unlock()
 	return uint64(c.count)
