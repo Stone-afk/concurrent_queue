@@ -10,7 +10,7 @@ import (
 
 func TestConcurrentBlockingQueue(t *testing.T) {
 	// 只能确保没有死锁
-	q := NewConcurrentArrayBlockingQueueV2[int](10000)
+	q := NewArrayBlockingQueueV2[int](10000)
 	// data := make(chan int, 10000000000000000000000)
 	// 并发的问题都落在 m 上
 	// var m sync.Mutex
@@ -48,7 +48,7 @@ func TestConcurrentBlockingQueue(t *testing.T) {
 // BenchmarkConcurrentQueue-8       2783775               413.3 ns/op
 func BenchmarkConcurrentQueue(b *testing.B) {
 	var wg sync.WaitGroup
-	q := NewConcurrentArrayBlockingQueueV2[int](100)
+	q := NewArrayBlockingQueueV2[int](100)
 	wg.Add(2)
 	b.ResetTimer()
 	go func() {
