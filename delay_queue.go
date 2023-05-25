@@ -10,8 +10,8 @@ import (
 type DelayQueue[T Delayable] struct {
 	pq            *PriorityQueue[T]
 	mutex         *sync.Mutex
-	dequeueSignal *cond
-	enqueueSignal *cond
+	DequeueSignal *cond
+	EnqueueSignal *cond
 }
 
 func NewDelayQueue[T Delayable](capacity int) *DelayQueue[T] {
@@ -29,12 +29,12 @@ func NewDelayQueue[T Delayable](capacity int) *DelayQueue[T] {
 			return -1
 		}),
 		mutex:         m,
-		enqueueSignal: newCond(m),
-		dequeueSignal: newCond(m),
+		EnqueueSignal: newCond(m),
+		DequeueSignal: newCond(m),
 	}
 }
 
-func (q *DelayQueue[T]) EnQueue(ctx context.Context, data T) error {
+func (q *DelayQueue[T]) Enqueue(ctx context.Context, data T) error {
 	for {
 		select {
 		case <-ctx.Done():
@@ -57,10 +57,10 @@ func (q *DelayQueue[T]) EnQueue(ctx context.Context, data T) error {
 			// if data.Deadline().Before(top.Deadline()) {
 			//
 			// }
-			q.enqueueSignal.broadcast()
+			q.EnqueueSignal.broadcast()
 			return nil
 		case ErrOutOfCapacity:
-			signalCh := q.dequeueSignal.signalCh()
+			signalCh := q.DequeueSignal.signalCh()
 			// 阻塞，开始睡觉了
 			select {
 			case <-ctx.Done():
@@ -75,7 +75,7 @@ func (q *DelayQueue[T]) EnQueue(ctx context.Context, data T) error {
 	}
 }
 
-func (q *DelayQueue[T]) DeQueue(ctx context.Context) (T, error) {
+func (q *DelayQueue[T]) Dequeue(ctx context.Context) (T, error) {
 	var timer *time.Timer
 	defer func() {
 		if timer != nil {
@@ -110,11 +110,11 @@ func (q *DelayQueue[T]) DeQueue(ctx context.Context) (T, error) {
 					q.mutex.Unlock()
 					return t, err
 				}
-				q.dequeueSignal.broadcast()
+				q.DequeueSignal.broadcast()
 				return val, nil
 			}
 			// 要在这里解锁
-			signalCh := q.enqueueSignal.signalCh()
+			signalCh := q.EnqueueSignal.signalCh()
 			if timer == nil {
 				timer = time.NewTimer(delayTime)
 			} else {
@@ -133,7 +133,7 @@ func (q *DelayQueue[T]) DeQueue(ctx context.Context) (T, error) {
 			case <-signalCh:
 			}
 		case ErrEmptyQueue:
-			signalCh := q.enqueueSignal.signalCh()
+			signalCh := q.EnqueueSignal.signalCh()
 			// 阻塞，开始 sleep
 			select {
 			case <-ctx.Done():

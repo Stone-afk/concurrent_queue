@@ -21,7 +21,7 @@ func TestDelayQueue_Dequeue(t *testing.T) {
 		wantErr error
 	}{
 		{
-			name: "dequeued",
+			name: "Dequeued",
 			q: newDelayQueue(t, delayElem{
 				deadline: now.Add(time.Millisecond * 10),
 				val:      11,
@@ -71,7 +71,7 @@ func TestDelayQueue_Dequeue(t *testing.T) {
 		t.Run(tc.name, func(t *testing.T) {
 			ctx, cancel := context.WithTimeout(context.Background(), tc.timeout)
 			defer cancel()
-			ele, err := tc.q.DeQueue(ctx)
+			ele, err := tc.q.Dequeue(ctx)
 			assert.Equal(t, tc.wantErr, err)
 			if err != nil {
 				return
@@ -81,13 +81,13 @@ func TestDelayQueue_Dequeue(t *testing.T) {
 	}
 
 	// 最开始没有元素，然后进去了一个元素
-	t.Run("dequeue while enqueue", func(t *testing.T) {
+	t.Run("Dequeue while Enqueue", func(t *testing.T) {
 		q := NewDelayQueue[delayElem](3)
 		go func() {
 			time.Sleep(time.Millisecond * 500)
 			ctx, cancel := context.WithTimeout(context.Background(), time.Second)
 			defer cancel()
-			err := q.EnQueue(ctx, delayElem{
+			err := q.Enqueue(ctx, delayElem{
 				val:      123,
 				deadline: time.Now().Add(time.Millisecond * 100),
 			})
@@ -95,17 +95,17 @@ func TestDelayQueue_Dequeue(t *testing.T) {
 		}()
 		ctx, cancel := context.WithTimeout(context.Background(), time.Second)
 		defer cancel()
-		ele, err := q.DeQueue(ctx)
+		ele, err := q.Dequeue(ctx)
 		require.NoError(t, err)
 		require.Equal(t, 123, ele.val)
 	})
 
 	// 进去了一个更加短超时时间的元素
 	// 于是后面两个都会拿出来，但是时间短的会先拿出来
-	t.Run("enqueue short ele", func(t *testing.T) {
+	t.Run("Enqueue short ele", func(t *testing.T) {
 		q := NewDelayQueue[delayElem](3)
 		// 长时间过期的元素
-		err := q.EnQueue(context.Background(), delayElem{
+		err := q.Enqueue(context.Background(), delayElem{
 			val:      234,
 			deadline: time.Now().Add(time.Second),
 		})
@@ -115,7 +115,7 @@ func TestDelayQueue_Dequeue(t *testing.T) {
 			time.Sleep(time.Millisecond * 200)
 			ctx, cancel := context.WithTimeout(context.Background(), time.Second)
 			defer cancel()
-			err := q.EnQueue(ctx, delayElem{
+			err := q.Enqueue(ctx, delayElem{
 				val:      123,
 				deadline: time.Now().Add(time.Millisecond * 300),
 			})
@@ -124,23 +124,23 @@ func TestDelayQueue_Dequeue(t *testing.T) {
 		ctx, cancel := context.WithTimeout(context.Background(), time.Second*2)
 		defer cancel()
 		// 先拿出短时间的
-		ele, err := q.DeQueue(ctx)
+		ele, err := q.Dequeue(ctx)
 		require.NoError(t, err)
 		require.Equal(t, 123, ele.val)
 		require.True(t, ele.deadline.Before(time.Now()))
 
 		// 再拿出长时间的
-		ele, err = q.DeQueue(ctx)
+		ele, err = q.Dequeue(ctx)
 		require.NoError(t, err)
 		require.Equal(t, 234, ele.val)
 		require.True(t, ele.deadline.Before(time.Now()))
 
 		// 没有元素了，会超时
-		_, err = q.DeQueue(ctx)
+		_, err = q.Dequeue(ctx)
 		require.Equal(t, context.DeadlineExceeded, err)
 	})
 
-	t.Run("dequeue two elements concurrently with larger delay intervals", func(t *testing.T) {
+	t.Run("Dequeue two elements concurrently with larger delay intervals", func(t *testing.T) {
 		t.Parallel()
 
 		capacity := 2
@@ -151,20 +151,20 @@ func TestDelayQueue_Dequeue(t *testing.T) {
 			val:      10001,
 			deadline: time.Now().Add(50 * time.Millisecond),
 		}
-		require.NoError(t, q.EnQueue(context.Background(), elem1))
+		require.NoError(t, q.Enqueue(context.Background(), elem1))
 
 		elem2 := delayElem{
 			val:      10002,
 			deadline: time.Now().Add(500 * time.Millisecond),
 		}
-		require.NoError(t, q.EnQueue(context.Background(), elem2))
+		require.NoError(t, q.Enqueue(context.Background(), elem2))
 
 		// 并发出队，使调用者协程并发地按照较小截止日期的元素的延迟时间进行等待
 		elemsChan := make(chan delayElem, capacity)
 		var eg errgroup.Group
 		for i := 0; i < capacity; i++ {
 			eg.Go(func() error {
-				ele, err := q.DeQueue(context.Background())
+				ele, err := q.Dequeue(context.Background())
 				elemsChan <- ele
 				return err
 			})
@@ -196,7 +196,7 @@ func TestDelayQueue_Enqueue(t *testing.T) {
 		wantErr error
 	}{
 		{
-			name:    "enqueued",
+			name:    "Enqueued",
 			q:       NewDelayQueue[delayElem](3),
 			timeout: time.Second,
 			val:     delayElem{val: 123, deadline: now.Add(time.Minute)},
@@ -210,8 +210,8 @@ func TestDelayQueue_Enqueue(t *testing.T) {
 			wantErr: context.DeadlineExceeded,
 		},
 		{
-			// enqueue 的时候阻塞住了，直到超时
-			name:    "enqueue timeout",
+			// Enqueue 的时候阻塞住了，直到超时
+			name:    "Enqueue timeout",
 			q:       newDelayQueue(t, delayElem{val: 123, deadline: now.Add(time.Minute)}),
 			timeout: time.Millisecond * 100,
 			val:     delayElem{val: 234, deadline: now.Add(time.Minute)},
@@ -223,26 +223,26 @@ func TestDelayQueue_Enqueue(t *testing.T) {
 		t.Run(tc.name, func(t *testing.T) {
 			ctx, cancel := context.WithTimeout(context.Background(), tc.timeout)
 			defer cancel()
-			err := tc.q.EnQueue(ctx, tc.val)
+			err := tc.q.Enqueue(ctx, tc.val)
 			assert.Equal(t, tc.wantErr, err)
 		})
 	}
 
 	// 队列满了，这时候入队。
 	// 在等待一段时间之后，队列元素被取走一个
-	t.Run("enqueue while DeQueue", func(t *testing.T) {
+	t.Run("Enqueue while Dequeue", func(t *testing.T) {
 		t.Parallel()
 		q := newDelayQueue(t, delayElem{val: 123, deadline: time.Now().Add(time.Second)})
 		go func() {
 			ctx, cancel := context.WithTimeout(context.Background(), time.Second*2)
 			defer cancel()
-			ele, err := q.DeQueue(ctx)
+			ele, err := q.Dequeue(ctx)
 			require.NoError(t, err)
 			require.Equal(t, 123, ele.val)
 		}()
 		ctx, cancel := context.WithTimeout(context.Background(), time.Second*2)
 		defer cancel()
-		err := q.EnQueue(ctx, delayElem{val: 345, deadline: time.Now().Add(time.Millisecond * 1500)})
+		err := q.Enqueue(ctx, delayElem{val: 345, deadline: time.Now().Add(time.Millisecond * 1500)})
 		require.NoError(t, err)
 	})
 
@@ -250,28 +250,28 @@ func TestDelayQueue_Enqueue(t *testing.T) {
 	// 但是因为我们在入队的时候是分别计算 Delay 的
 	// 那么就会导致虽然过期时间是相同的，但是因为调用 Delay 有先后之分
 	// 所以会造成 dstDelay 就是要比 srcDelay 小一点
-	t.Run("enqueue with same deadline", func(t *testing.T) {
+	t.Run("Enqueue with same deadline", func(t *testing.T) {
 		t.Parallel()
 		q := NewDelayQueue[delayElem](3)
 		deadline := time.Now().Add(time.Second)
 		ctx, cancel := context.WithTimeout(context.Background(), time.Second*2)
 		defer cancel()
-		err := q.EnQueue(ctx, delayElem{val: 123, deadline: deadline})
+		err := q.Enqueue(ctx, delayElem{val: 123, deadline: deadline})
 		require.NoError(t, err)
-		err = q.EnQueue(ctx, delayElem{val: 456, deadline: deadline})
+		err = q.Enqueue(ctx, delayElem{val: 456, deadline: deadline})
 		require.NoError(t, err)
-		err = q.EnQueue(ctx, delayElem{val: 789, deadline: deadline})
+		err = q.Enqueue(ctx, delayElem{val: 789, deadline: deadline})
 		require.NoError(t, err)
 
-		ele, err := q.DeQueue(ctx)
+		ele, err := q.Dequeue(ctx)
 		require.NoError(t, err)
 		require.Equal(t, 123, ele.val)
 
-		ele, err = q.DeQueue(ctx)
+		ele, err = q.Dequeue(ctx)
 		require.NoError(t, err)
 		require.Equal(t, 789, ele.val)
 
-		ele, err = q.DeQueue(ctx)
+		ele, err = q.Dequeue(ctx)
 		require.NoError(t, err)
 		require.Equal(t, 456, ele.val)
 	})
@@ -280,7 +280,7 @@ func TestDelayQueue_Enqueue(t *testing.T) {
 func newDelayQueue(t *testing.T, eles ...delayElem) *DelayQueue[delayElem] {
 	q := NewDelayQueue[delayElem](len(eles))
 	for _, ele := range eles {
-		err := q.EnQueue(context.Background(), ele)
+		err := q.Enqueue(context.Background(), ele)
 		require.NoError(t, err)
 	}
 	return q
@@ -300,30 +300,30 @@ func ExampleNewDelayQueue() {
 	ctx, cancel := context.WithTimeout(context.Background(), time.Second*10)
 	defer cancel()
 	now := time.Now()
-	_ = q.EnQueue(ctx, delayElem{
+	_ = q.Enqueue(ctx, delayElem{
 		// 3 秒后过期
 		deadline: now.Add(time.Second * 3),
 		val:      3,
 	})
 
-	_ = q.EnQueue(ctx, delayElem{
+	_ = q.Enqueue(ctx, delayElem{
 		// 2 秒后过期
 		deadline: now.Add(time.Second * 2),
 		val:      2,
 	})
 
-	_ = q.EnQueue(ctx, delayElem{
+	_ = q.Enqueue(ctx, delayElem{
 		// 1 秒后过期
 		deadline: now.Add(time.Second * 1),
 		val:      1,
 	})
 
 	var vals []int
-	val, _ := q.DeQueue(ctx)
+	val, _ := q.Dequeue(ctx)
 	vals = append(vals, val.val)
-	val, _ = q.DeQueue(ctx)
+	val, _ = q.Dequeue(ctx)
 	vals = append(vals, val.val)
-	val, _ = q.DeQueue(ctx)
+	val, _ = q.Dequeue(ctx)
 	vals = append(vals, val.val)
 	fmt.Println(vals)
 	duration := time.Since(now)
