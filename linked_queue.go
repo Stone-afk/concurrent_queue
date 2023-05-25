@@ -6,22 +6,22 @@ import (
 	"unsafe"
 )
 
-type ConcurrentLinkBlockingQueue[T any] struct {
+type LinkedQueue[T any] struct {
 	head  unsafe.Pointer
 	tail  unsafe.Pointer
 	count uint64
 }
 
-func NewConcurrentLinkedQueue[T any]() *ConcurrentLinkBlockingQueue[T] {
+func NewLinkedQueue[T any]() *LinkedQueue[T] {
 	head := &node[T]{}
 	ptr := unsafe.Pointer(head)
-	return &ConcurrentLinkBlockingQueue[T]{
+	return &LinkedQueue[T]{
 		head: ptr,
 		tail: ptr,
 	}
 }
 
-func (c *ConcurrentLinkBlockingQueue[T]) Enqueue(ctx context.Context, data T) error {
+func (q *LinkedQueue[T]) Enqueue(ctx context.Context, data T) error {
 	newNode := &node[T]{val: data}
 	newNodePtr := unsafe.Pointer(newNode)
 
@@ -31,17 +31,17 @@ func (c *ConcurrentLinkBlockingQueue[T]) Enqueue(ctx context.Context, data T) er
 			return ctx.Err()
 		}
 		// select tail; => tail = 4
-		tail := atomic.LoadPointer(&c.tail)
+		tail := atomic.LoadPointer(&q.tail)
 		// 为什么不能这样写？
 		// tail = c.tail // 这种是非线程安全
 		// Update Set tail = 3 WHERE tail = 4
-		if atomic.CompareAndSwapPointer(&c.tail, tail, newNodePtr) {
+		if atomic.CompareAndSwapPointer(&q.tail, tail, newNodePtr) {
 			// 在这一步，就要讲 tail.next 指向 c.tail
 			// tail.next = c.tail
 			tailNode := (*node[T])(tail)
 			// 你在这一步，c.tail 被人修改了
 			atomic.StorePointer(&tailNode.next, newNodePtr)
-			atomic.AddUint64(&c.count, 1)
+			atomic.AddUint64(&q.count, 1)
 			return nil
 		}
 	}
@@ -65,15 +65,15 @@ func (c *ConcurrentLinkBlockingQueue[T]) Enqueue(ctx context.Context, data T) er
 	// }
 }
 
-func (c *ConcurrentLinkBlockingQueue[T]) Dequeue(ctx context.Context) (T, error) {
+func (q *LinkedQueue[T]) Dequeue(ctx context.Context) (T, error) {
 	for {
 		if ctx.Err() != nil {
 			var t T
 			return t, ctx.Err()
 		}
-		head := atomic.LoadPointer(&c.head)
+		head := atomic.LoadPointer(&q.head)
 		headNode := (*node[T])(head)
-		tail := atomic.LoadPointer(&c.tail)
+		tail := atomic.LoadPointer(&q.tail)
 		tailNode := (*node[T])(tail)
 		if headNode == tailNode {
 			// 不需要做更多检测，在当下这一刻，我们就认为没有元素，即便这时候正好有人入队
@@ -84,7 +84,7 @@ func (c *ConcurrentLinkBlockingQueue[T]) Dequeue(ctx context.Context) (T, error)
 		}
 		headNext := atomic.LoadPointer(&headNode.next)
 		// 如果到这里为空了，CAS 操作不会成功。因为原本的数据，被人拿走了
-		if atomic.CompareAndSwapPointer(&c.head, head, headNext) {
+		if atomic.CompareAndSwapPointer(&q.head, head, headNext) {
 			headNextNode := (*node[T])(headNext)
 			return headNextNode.val, nil
 		}
@@ -101,9 +101,9 @@ func (c *ConcurrentLinkBlockingQueue[T]) Dequeue(ctx context.Context) (T, error)
 //	panic("implement me")
 //}
 
-func (c *ConcurrentLinkBlockingQueue[T]) Len() uint64 {
+func (q *LinkedQueue[T]) Len() uint64 {
 	// 在你读的过程中，就被人改了
-	return atomic.LoadUint64(&c.count)
+	return atomic.LoadUint64(&q.count)
 }
 
 type node[T any] struct {

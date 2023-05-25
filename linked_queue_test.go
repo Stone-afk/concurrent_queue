@@ -1,6 +1,8 @@
 package concurrent_queue
 
 import (
+	"context"
+	"fmt"
 	"log"
 	"sync/atomic"
 	"testing"
@@ -23,4 +25,17 @@ func TestCAS(t *testing.T) {
 	// res := atomic.CompareAndSwapInt64(&value, 11, 12)
 	log.Println(res)
 	log.Println(value)
+}
+
+func ExampleNewLinkedQueue() {
+	q := NewLinkedQueue[int]()
+	_ = q.Enqueue(context.Background(), 10)
+	val, err := q.Dequeue(context.Background())
+	if err != nil {
+		// 一般意味着队列为空
+		fmt.Println(err)
+	}
+	fmt.Println(val)
+	// Output:
+	// 10
 }
