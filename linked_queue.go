@@ -6,22 +6,22 @@ import (
 	"unsafe"
 )
 
-type LinkBlockingQueue[T any] struct {
+type LinkedQueue[T any] struct {
 	head  unsafe.Pointer
 	tail  unsafe.Pointer
 	count uint64
 }
 
-func NewLinkBlockingQueue[T any]() *LinkBlockingQueue[T] {
+func NewLinkedQueue[T any]() *LinkedQueue[T] {
 	head := &node[T]{}
 	ptr := unsafe.Pointer(head)
-	return &LinkBlockingQueue[T]{
+	return &LinkedQueue[T]{
 		head: ptr,
 		tail: ptr,
 	}
 }
 
-func (q *LinkBlockingQueue[T]) Enqueue(ctx context.Context, data T) error {
+func (q *LinkedQueue[T]) Enqueue(ctx context.Context, data T) error {
 	newNode := &node[T]{val: data}
 	newNodePtr := unsafe.Pointer(newNode)
 
@@ -65,7 +65,7 @@ func (q *LinkBlockingQueue[T]) Enqueue(ctx context.Context, data T) error {
 	// }
 }
 
-func (q *LinkBlockingQueue[T]) Dequeue(ctx context.Context) (T, error) {
+func (q *LinkedQueue[T]) Dequeue(ctx context.Context) (T, error) {
 	for {
 		if ctx.Err() != nil {
 			var t T
@@ -101,9 +101,9 @@ func (q *LinkBlockingQueue[T]) Dequeue(ctx context.Context) (T, error) {
 //	panic("implement me")
 //}
 
-func (c *LinkBlockingQueue[T]) Len() uint64 {
+func (q *LinkedQueue[T]) Len() uint64 {
 	// 在你读的过程中，就被人改了
-	return atomic.LoadUint64(&c.count)
+	return atomic.LoadUint64(&q.count)
 }
 
 type node[T any] struct {
