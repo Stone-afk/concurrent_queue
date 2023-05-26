@@ -4,6 +4,7 @@ import (
 	"context"
 	"fmt"
 	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 	"log"
 	"math/rand"
 	"sync"
@@ -28,6 +29,47 @@ func TestCAS(t *testing.T) {
 	// res := atomic.CompareAndSwapInt64(&value, 11, 12)
 	log.Println(res)
 	log.Println(value)
+}
+
+func TestConcurrentQueue_Enqueue(t *testing.T) {
+	t.Parallel()
+	testCases := []struct {
+		name string
+		q    func() *LinkedQueue[int]
+		val  int
+
+		wantData []int
+		wantErr  error
+	}{
+		{
+			name: "empty",
+			q: func() *LinkedQueue[int] {
+				return NewLinkedQueue[int]()
+			},
+			val:      123,
+			wantData: []int{123},
+		},
+		{
+			name: "multiple",
+			q: func() *LinkedQueue[int] {
+				q := NewLinkedQueue[int]()
+				err := q.Enqueue(context.Background(), 123)
+				require.NoError(t, err)
+				return q
+			},
+			val:      234,
+			wantData: []int{123, 234},
+		},
+	}
+
+	for _, tc := range testCases {
+		t.Run(tc.name, func(t *testing.T) {
+			q := tc.q()
+			err := q.Enqueue(context.Background(), tc.val)
+			assert.Equal(t, tc.wantErr, err)
+			assert.Equal(t, tc.wantData, q.asSlice())
+		})
+	}
 }
 
 func TestConcurrentQueue_Dequeue(t *testing.T) {
