@@ -3,6 +3,7 @@ package concurrent_queue
 import (
 	"context"
 	"fmt"
+	"github.com/stretchr/testify/assert"
 	"log"
 	"math/rand"
 	"sync"
@@ -27,6 +28,80 @@ func TestCAS(t *testing.T) {
 	// res := atomic.CompareAndSwapInt64(&value, 11, 12)
 	log.Println(res)
 	log.Println(value)
+}
+
+func TestConcurrentQueue_Dequeue(t *testing.T) {
+	t.Parallel()
+	testCases := []struct {
+		name     string
+		q        func() *LinkedQueue[int]
+		wantVal  int
+		wantData []int
+		wantErr  error
+	}{
+		{
+			name: "empty",
+			q: func() *LinkedQueue[int] {
+				q := NewLinkedQueue[int]()
+				return q
+			},
+			wantErr: ErrEmptyQueue,
+		},
+		{
+			name: "single",
+			q: func() *LinkedQueue[int] {
+				q := NewLinkedQueue[int]()
+				err := q.Enqueue(context.Background(), 123)
+				assert.NoError(t, err)
+				return q
+			},
+			wantVal: 123,
+		},
+		{
+			name: "multiple",
+			q: func() *LinkedQueue[int] {
+				q := NewLinkedQueue[int]()
+				err := q.Enqueue(context.Background(), 123)
+				assert.NoError(t, err)
+				err = q.Enqueue(context.Background(), 234)
+				assert.NoError(t, err)
+				return q
+			},
+			wantVal:  123,
+			wantData: []int{234},
+		},
+		{
+			name: "enqueue and dequeue",
+			q: func() *LinkedQueue[int] {
+				q := NewLinkedQueue[int]()
+				err := q.Enqueue(context.Background(), 123)
+				assert.NoError(t, err)
+				err = q.Enqueue(context.Background(), 234)
+				assert.NoError(t, err)
+				val, err := q.Dequeue(context.Background())
+				assert.Equal(t, 123, val)
+				assert.NoError(t, err)
+				err = q.Enqueue(context.Background(), 345)
+				assert.NoError(t, err)
+				return q
+			},
+			wantVal:  234,
+			wantData: []int{345},
+		},
+	}
+
+	for _, tc := range testCases {
+		t.Run(tc.name, func(t *testing.T) {
+			q := tc.q()
+			val, err := q.Dequeue(context.Background())
+			assert.Equal(t, tc.wantErr, err)
+			if err != nil {
+				return
+			}
+			assert.Equal(t, tc.wantVal, val)
+			assert.Equal(t, tc.wantData, q.asSlice())
+		})
+	}
 }
 
 func TestLinkedQueue(t *testing.T) {
