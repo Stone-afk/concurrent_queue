@@ -10,8 +10,16 @@ import (
 
 // ArrayBlockingQueue 有界并发阻塞队列
 type ArrayBlockingQueue[T any] struct {
-	data  []T
-	mutex *sync.Mutex
+	data []T
+
+	// 队头元素下标
+	head int
+	// 队尾元素下标
+	tail int
+	// 包含多少个元素
+	count int
+
+	mutex *sync.RWMutex
 
 	EnqueueCap *semaphore.Weighted
 	DequeueCap *semaphore.Weighted
