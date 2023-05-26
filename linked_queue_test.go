@@ -27,6 +27,18 @@ func TestCAS(t *testing.T) {
 	log.Println(value)
 }
 
+func (q *LinkedQueue[T]) asSlice() []T {
+	var res []T
+	//curPointer := (*node[T])(q.head).next
+	//cur := (*node[T])(curPointer)
+	cur := (*node[T])((*node[T])(q.head).next)
+	for cur != nil {
+		res = append(res, cur.val)
+		cur = (*node[T])(cur.next)
+	}
+	return res
+}
+
 func ExampleNewLinkedQueue() {
 	q := NewLinkedQueue[int]()
 	_ = q.Enqueue(context.Background(), 10)
