@@ -8,7 +8,7 @@ import (
 	"time"
 )
 
-func TestConcurrentBlockingQueue(t *testing.T) {
+func TestArrayBlockingQueueV2(t *testing.T) {
 	// 只能确保没有死锁
 	q := NewArrayBlockingQueueV2[int](10000)
 	// data := make(chan int, 10000000000000000000000)
@@ -45,8 +45,8 @@ func TestConcurrentBlockingQueue(t *testing.T) {
 }
 
 // 切片实现
-// BenchmarkConcurrentQueue-8       2783775               413.3 ns/op
-func BenchmarkConcurrentQueue(b *testing.B) {
+// BenchmarkArrayBlockingQueueV2-8       2783775               413.3 ns/op
+func BenchmarkArrayBlockingQueueV2(b *testing.B) {
 	var wg sync.WaitGroup
 	q := NewArrayBlockingQueueV2[int](100)
 	wg.Add(2)
