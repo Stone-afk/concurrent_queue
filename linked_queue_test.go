@@ -4,6 +4,8 @@ import (
 	"context"
 	"fmt"
 	"log"
+	"math/rand"
+	"sync"
 	"sync/atomic"
 	"testing"
 )
@@ -25,6 +27,39 @@ func TestCAS(t *testing.T) {
 	// res := atomic.CompareAndSwapInt64(&value, 11, 12)
 	log.Println(res)
 	log.Println(value)
+}
+
+func TestLinkedQueue(t *testing.T) {
+	t.Parallel()
+	// 仅仅是为了测试在入队出队期间不会出现 panic 或者死循环之类的问题
+	// FIFO 特性参考其余测试
+	q := NewLinkedQueue[int]()
+	var wg sync.WaitGroup
+	wg.Add(10000)
+	for i := 0; i < 10; i++ {
+		go func() {
+			for j := 0; j < 1000; j++ {
+				val := rand.Int()
+				_ = q.Enqueue(context.Background(), val)
+			}
+		}()
+	}
+	var cnt int32 = 0
+	for i := 0; i < 10; i++ {
+		go func() {
+			for {
+				if atomic.LoadInt32(&cnt) >= 10000 {
+					return
+				}
+				_, err := q.Dequeue(context.Background())
+				if err == nil {
+					atomic.AddInt32(&cnt, 1)
+					wg.Done()
+				}
+			}
+		}()
+	}
+	wg.Wait()
 }
 
 func (q *LinkedQueue[T]) asSlice() []T {
