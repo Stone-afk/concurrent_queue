@@ -77,9 +77,10 @@ func (c *ArrayBlockingQueue[T]) isEmpty() bool {
 	panic("implement me")
 }
 
-func (c *ArrayBlockingQueue[T]) Len() uint64 {
-	// TODO implement me
-	panic("implement me")
+func (c *ArrayBlockingQueue[T]) Len() int {
+	c.mutex.RLock()
+	defer c.mutex.RUnlock()
+	return c.count
 }
 
 type ArrayBlockingQueueV1[T any] struct {
