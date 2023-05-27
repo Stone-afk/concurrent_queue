@@ -29,8 +29,57 @@ type ArrayBlockingQueue[T any] struct {
 // 容量会在最开始的时候就初始化好
 // capacity 必须为正数
 func NewArrayBlockingQueue[T any](capacity int) *ArrayBlockingQueue[T] {
-	res := &ArrayBlockingQueue[T]{}
+	m := &sync.RWMutex{}
+
+	semaForEnqueue := semaphore.NewWeighted(int64(capacity))
+	semaForDequeue := semaphore.NewWeighted(int64(capacity))
+
+	// error暂时不处理，因为目前没办法处理，只能考虑panic掉
+	// 相当于将信号量置空
+	_ = semaForDequeue.Acquire(context.TODO(), int64(capacity))
+
+	res := &ArrayBlockingQueue[T]{
+		data:       make([]T, capacity),
+		mutex:      m,
+		EnqueueCap: semaForEnqueue,
+		DequeueCap: semaForDequeue,
+	}
 	return res
+}
+
+func (c *ArrayBlockingQueue[T]) Enqueue(ctx context.Context, t T) error {
+	// TODO implement me
+	panic("implement me")
+}
+
+func (c *ArrayBlockingQueue[T]) Dequeue(ctx context.Context) (T, error) {
+	// TODO implement me
+	panic("implement me")
+}
+
+func (c *ArrayBlockingQueue[T]) IsFull() bool {
+	// TODO implement me
+	panic("implement me")
+}
+
+func (c *ArrayBlockingQueue[T]) isFull() bool {
+	// TODO implement me
+	panic("implement me")
+}
+
+func (c *ArrayBlockingQueue[T]) IsEmpty() bool {
+	// TODO implement me
+	panic("implement me")
+}
+
+func (c *ArrayBlockingQueue[T]) isEmpty() bool {
+	// TODO implement me
+	panic("implement me")
+}
+
+func (c *ArrayBlockingQueue[T]) Len() uint64 {
+	// TODO implement me
+	panic("implement me")
 }
 
 type ArrayBlockingQueueV1[T any] struct {
