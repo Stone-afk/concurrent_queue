@@ -19,12 +19,10 @@ type ArrayBlockingQueue[T any] struct {
 	// 包含多少个元素
 	count int
 
-	maxSize int
-
 	mutex *sync.RWMutex
 
-	EnqueueCap *semaphore.Weighted
-	DequeueCap *semaphore.Weighted
+	enqueueCap *semaphore.Weighted
+	dequeueCap *semaphore.Weighted
 }
 
 // NewArrayBlockingQueue 创建一个有界阻塞队列
@@ -41,21 +39,45 @@ func NewArrayBlockingQueue[T any](capacity int) *ArrayBlockingQueue[T] {
 	_ = semaForDequeue.Acquire(context.TODO(), int64(capacity))
 
 	res := &ArrayBlockingQueue[T]{
-		data:       make([]T, capacity),
+		data:       make([]T, 0, capacity),
 		mutex:      m,
-		maxSize:    capacity,
-		EnqueueCap: semaForEnqueue,
-		DequeueCap: semaForDequeue,
+		enqueueCap: semaForEnqueue,
+		dequeueCap: semaForDequeue,
 	}
 	return res
 }
 
 func (q *ArrayBlockingQueue[T]) Enqueue(ctx context.Context, t T) error {
+
+	// 能拿到，说明队列还有空位，可以入队，拿不到则阻塞
+	err := q.enqueueCap.Acquire(ctx, 1)
+	if err != nil {
+		return err
+	}
+
+	q.mutex.Lock()
+	// 拿到锁，先判断是否超时，防止在抢锁时已经超时
 	if ctx.Err() != nil {
+		// 超时应该主动归还信号量，避免容量泄露
+		q.enqueueCap.Release(1)
 		return ctx.Err()
 	}
-	panic("implement me")
 
+	q.data[q.tail] = t
+	q.tail++
+	q.count++
+
+	// c.tail 已经是最后一个了，重置下标
+	if q.tail == cap(q.data) {
+		q.tail = 0
+	}
+
+	// 往出队的sema放入一个元素，出队的goroutine可以拿到并出队
+	q.dequeueCap.Release(1)
+
+	q.mutex.Unlock()
+
+	return nil
 }
 
 func (q *ArrayBlockingQueue[T]) Dequeue(ctx context.Context) (T, error) {
@@ -70,7 +92,7 @@ func (q *ArrayBlockingQueue[T]) IsFull() bool {
 }
 
 func (q *ArrayBlockingQueue[T]) isFull() bool {
-	return q.count == q.maxSize
+	return q.count == cap(q.data)
 }
 
 func (q *ArrayBlockingQueue[T]) IsEmpty() bool {
