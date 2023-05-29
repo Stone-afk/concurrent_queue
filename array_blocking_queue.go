@@ -51,8 +51,11 @@ func NewArrayBlockingQueue[T any](capacity int) *ArrayBlockingQueue[T] {
 }
 
 func (q *ArrayBlockingQueue[T]) Enqueue(ctx context.Context, t T) error {
-	// TODO implement me
+	if ctx.Err() != nil {
+		return ctx.Err()
+	}
 	panic("implement me")
+
 }
 
 func (q *ArrayBlockingQueue[T]) Dequeue(ctx context.Context) (T, error) {
@@ -63,6 +66,10 @@ func (q *ArrayBlockingQueue[T]) Dequeue(ctx context.Context) (T, error) {
 func (q *ArrayBlockingQueue[T]) IsFull() bool {
 	q.mutex.RLock()
 	defer q.mutex.RUnlock()
+	return q.isFull()
+}
+
+func (q *ArrayBlockingQueue[T]) isFull() bool {
 	return q.count == q.maxSize
 }
 
