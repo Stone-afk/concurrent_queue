@@ -19,6 +19,8 @@ type ArrayBlockingQueue[T any] struct {
 	// 包含多少个元素
 	count int
 
+	maxSize int
+
 	mutex *sync.RWMutex
 
 	EnqueueCap *semaphore.Weighted
@@ -41,45 +43,39 @@ func NewArrayBlockingQueue[T any](capacity int) *ArrayBlockingQueue[T] {
 	res := &ArrayBlockingQueue[T]{
 		data:       make([]T, capacity),
 		mutex:      m,
+		maxSize:    capacity,
 		EnqueueCap: semaForEnqueue,
 		DequeueCap: semaForDequeue,
 	}
 	return res
 }
 
-func (c *ArrayBlockingQueue[T]) Enqueue(ctx context.Context, t T) error {
+func (q *ArrayBlockingQueue[T]) Enqueue(ctx context.Context, t T) error {
 	// TODO implement me
 	panic("implement me")
 }
 
-func (c *ArrayBlockingQueue[T]) Dequeue(ctx context.Context) (T, error) {
+func (q *ArrayBlockingQueue[T]) Dequeue(ctx context.Context) (T, error) {
 	// TODO implement me
 	panic("implement me")
 }
 
-func (c *ArrayBlockingQueue[T]) IsFull() bool {
-	// TODO implement me
-	panic("implement me")
+func (q *ArrayBlockingQueue[T]) IsFull() bool {
+	q.mutex.RLock()
+	defer q.mutex.RUnlock()
+	return q.count == q.maxSize
 }
 
-func (c *ArrayBlockingQueue[T]) isFull() bool {
-	// TODO implement me
-	panic("implement me")
+func (q *ArrayBlockingQueue[T]) IsEmpty() bool {
+	q.mutex.RLock()
+	defer q.mutex.RUnlock()
+	return q.count == 0
 }
 
-func (c *ArrayBlockingQueue[T]) IsEmpty() bool {
-	// TODO implement me
-	panic("implement me")
-}
-
-func (c *ArrayBlockingQueue[T]) isEmpty() bool {
-	// TODO implement me
-	panic("implement me")
-}
-
-func (c *ArrayBlockingQueue[T]) Len() uint64 {
-	// TODO implement me
-	panic("implement me")
+func (q *ArrayBlockingQueue[T]) Len() int {
+	q.mutex.RLock()
+	defer q.mutex.RUnlock()
+	return q.count
 }
 
 type ArrayBlockingQueueV1[T any] struct {
