@@ -129,6 +129,10 @@ func (q *ArrayBlockingQueue[T]) isFull() bool {
 func (q *ArrayBlockingQueue[T]) IsEmpty() bool {
 	q.mutex.RLock()
 	defer q.mutex.RUnlock()
+	return q.isEmpty()
+}
+
+func (q *ArrayBlockingQueue[T]) isEmpty() bool {
 	return q.count == 0
 }
 
