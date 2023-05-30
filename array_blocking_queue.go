@@ -18,6 +18,8 @@ type ArrayBlockingQueue[T any] struct {
 	tail int
 	// 包含多少个元素
 	count int
+	// zero 不能作为返回值返回，防止用户篡改
+	zero T
 
 	mutex *sync.RWMutex
 
@@ -81,8 +83,37 @@ func (q *ArrayBlockingQueue[T]) Enqueue(ctx context.Context, t T) error {
 }
 
 func (q *ArrayBlockingQueue[T]) Dequeue(ctx context.Context) (T, error) {
-	// TODO implement me
-	panic("implement me")
+	// 能拿到，说明队列有元素可以取，可以出队，拿不到则阻塞
+	err := q.dequeueCap.Acquire(ctx, 1)
+
+	var t T
+	if err != nil {
+		return t, err
+	}
+
+	q.mutex.Lock()
+
+	// 拿到锁，先判断是否超时，防止在抢锁时已经超时
+	if ctx.Err() != nil {
+		// 超时应该主动归还信号量，有元素消费不到
+		q.dequeueCap.Release(1)
+		return t, ctx.Err()
+	}
+
+	t = q.data[q.head]
+	// 为了释放内存，GC
+	q.data[q.head] = q.zero
+	q.head++
+	q.count--
+	if q.head == cap(q.data) {
+		q.head = 0
+	}
+
+	// 往入队的sema放入一个元素，入队的goroutine可以拿到并入队
+	q.enqueueCap.Release(1)
+	q.mutex.Unlock()
+
+	return t, nil
 }
 
 func (q *ArrayBlockingQueue[T]) IsFull() bool {
