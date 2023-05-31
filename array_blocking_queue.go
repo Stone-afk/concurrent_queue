@@ -50,12 +50,12 @@ func NewArrayBlockingQueue[T any](capacity int) *ArrayBlockingQueue[T] {
 }
 
 func (q *ArrayBlockingQueue[T]) AsSlice() []T {
-	q.mutex.Lock()
-	defer q.mutex.Unlock()
+	q.mutex.RLock()
+	defer q.mutex.RUnlock()
 	res := make([]T, 0, q.count)
 	cnt := 0
 	capacity := cap(q.data)
-	for cnt < capacity {
+	for cnt < q.count {
 		index := (q.head + cnt) % capacity
 		res = append(res, q.data[index])
 		cnt++
@@ -64,7 +64,6 @@ func (q *ArrayBlockingQueue[T]) AsSlice() []T {
 }
 
 func (q *ArrayBlockingQueue[T]) Enqueue(ctx context.Context, t T) error {
-
 	// 能拿到，说明队列还有空位，可以入队，拿不到则阻塞
 	err := q.enqueueCap.Acquire(ctx, 1)
 	if err != nil {
@@ -72,6 +71,8 @@ func (q *ArrayBlockingQueue[T]) Enqueue(ctx context.Context, t T) error {
 	}
 
 	q.mutex.Lock()
+	defer q.mutex.Unlock()
+
 	// 拿到锁，先判断是否超时，防止在抢锁时已经超时
 	if ctx.Err() != nil {
 		// 超时应该主动归还信号量，避免容量泄露
@@ -91,7 +92,8 @@ func (q *ArrayBlockingQueue[T]) Enqueue(ctx context.Context, t T) error {
 	// 往出队的sema放入一个元素，出队的goroutine可以拿到并出队
 	q.dequeueCap.Release(1)
 
-	q.mutex.Unlock()
+	// 这解锁容易忽略  if ctx.Err() != nil 分支情况，导致该情况未释放锁
+	//q.mutex.Unlock()
 
 	return nil
 }
@@ -106,6 +108,7 @@ func (q *ArrayBlockingQueue[T]) Dequeue(ctx context.Context) (T, error) {
 	}
 
 	q.mutex.Lock()
+	defer q.mutex.Unlock()
 
 	// 拿到锁，先判断是否超时，防止在抢锁时已经超时
 	if ctx.Err() != nil {
@@ -125,7 +128,7 @@ func (q *ArrayBlockingQueue[T]) Dequeue(ctx context.Context) (T, error) {
 
 	// 往入队的sema放入一个元素，入队的goroutine可以拿到并入队
 	q.enqueueCap.Release(1)
-	q.mutex.Unlock()
+	//q.mutex.Unlock()
 
 	return t, nil
 }
