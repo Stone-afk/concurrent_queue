@@ -49,6 +49,20 @@ func NewArrayBlockingQueue[T any](capacity int) *ArrayBlockingQueue[T] {
 	return res
 }
 
+func (q *ArrayBlockingQueue[T]) AsSlice() []T {
+	q.mutex.Lock()
+	defer q.mutex.Unlock()
+	res := make([]T, 0, q.count)
+	cnt := 0
+	capacity := cap(q.data)
+	for cnt < capacity {
+		index := (q.head + cnt) % capacity
+		res = append(res, q.data[index])
+		cnt++
+	}
+	return res
+}
+
 func (q *ArrayBlockingQueue[T]) Enqueue(ctx context.Context, t T) error {
 
 	// 能拿到，说明队列还有空位，可以入队，拿不到则阻塞
