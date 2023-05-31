@@ -2,6 +2,7 @@ package concurrent_queue
 
 import (
 	"context"
+	"fmt"
 	"math/rand"
 	"sync"
 	"testing"
@@ -65,4 +66,25 @@ func BenchmarkArrayBlockingQueueV2(b *testing.B) {
 		wg.Done()
 	}()
 	wg.Wait()
+}
+
+func ExampleNewArrayBlockingQueue() {
+	q := NewArrayBlockingQueue[int](10)
+	ctx, cancel := context.WithTimeout(context.Background(), time.Second)
+	defer cancel()
+	_ = q.Enqueue(ctx, 22)
+	val, err := q.Dequeue(ctx)
+	// 这是例子，实际中你不需要写得那么复杂
+	switch err {
+	case context.Canceled:
+		// 有人主动取消了，即调用了 cancel 方法。在这个例子里不会出现这个情况
+	case context.DeadlineExceeded:
+		// 超时了
+	case nil:
+		fmt.Println(val)
+	default:
+		// 其它乱七八糟的
+	}
+	// Output:
+	// 22
 }

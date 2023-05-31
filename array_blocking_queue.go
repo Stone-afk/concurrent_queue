@@ -31,7 +31,7 @@ type ArrayBlockingQueue[T any] struct {
 // 容量会在最开始的时候就初始化好
 // capacity 必须为正数
 func NewArrayBlockingQueue[T any](capacity int) *ArrayBlockingQueue[T] {
-	m := &sync.RWMutex{}
+	mutex := &sync.RWMutex{}
 
 	semaForEnqueue := semaphore.NewWeighted(int64(capacity))
 	semaForDequeue := semaphore.NewWeighted(int64(capacity))
@@ -41,8 +41,8 @@ func NewArrayBlockingQueue[T any](capacity int) *ArrayBlockingQueue[T] {
 	_ = semaForDequeue.Acquire(context.TODO(), int64(capacity))
 
 	res := &ArrayBlockingQueue[T]{
-		data:       make([]T, 0, capacity),
-		mutex:      m,
+		data:       make([]T, capacity),
+		mutex:      mutex,
 		enqueueCap: semaForEnqueue,
 		dequeueCap: semaForDequeue,
 	}
