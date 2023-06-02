@@ -14,6 +14,11 @@ func (q *LinkedBlockingQueue[T]) Enqueue(ctx context.Context, data T) error {
 	panic("implement me")
 }
 
+func (q *LinkedBlockingQueue[T]) Dequeue(ctx context.Context) (T, error) {
+	// TODO implement me
+	panic("implement me")
+}
+
 func (q *LinkedBlockingQueue[T]) Len() int {
 	// TODO implement me
 	panic("implement me")
