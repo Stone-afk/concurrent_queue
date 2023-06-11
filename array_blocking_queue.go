@@ -260,6 +260,7 @@ func (c *condV1) WaitTimeout(ctx context.Context) error {
 		case ch <- struct{}{}:
 		default:
 			// 这里已经超时返回了
+			// Signal 为了唤醒下一个被相同操作 (Enqueue 或者 Dequeue) 阻塞的 goroutine
 			c.Signal()
 			c.L.Unlock()
 		}
