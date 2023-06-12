@@ -10,6 +10,9 @@ type LinkedBlockingQueue[T any] struct {
 
 	// 最大容量
 	maxSize int
+
+	notEmpty *cond
+	notFull  *cond
 }
 
 func NewLinkedBlockingQueue[T any](capacity int) *LinkedBlockingQueue[T] {
