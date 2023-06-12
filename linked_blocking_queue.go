@@ -1,8 +1,16 @@
 package concurrent_queue
 
-import "context"
+import (
+	"context"
+	"sync"
+)
 
-type LinkedBlockingQueue[T any] struct{}
+type LinkedBlockingQueue[T any] struct {
+	mutex *sync.RWMutex
+
+	// 最大容量
+	maxSize int
+}
 
 func NewLinkedBlockingQueue[T any](capacity int) *LinkedBlockingQueue[T] {
 	// TODO implement me
