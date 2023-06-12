@@ -23,6 +23,7 @@ func NewLinkedBlockingQueue[T any](capacity int) *LinkedBlockingQueue[T] {
 	return &LinkedBlockingQueue[T]{
 		mutex:      mutex,
 		maxSize:    capacity,
+		notEmpty:   newCond(mutex),
 		linkedlist: list.NewLinkedList[T](),
 	}
 }
