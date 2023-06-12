@@ -2,6 +2,7 @@ package concurrent_queue
 
 import (
 	"context"
+	"github.com/ecodeclub/ekit/list"
 	"sync"
 )
 
@@ -10,6 +11,8 @@ type LinkedBlockingQueue[T any] struct {
 
 	// 最大容量
 	maxSize int
+	// 链表
+	linkedlist *list.LinkedList[T]
 
 	notEmpty *cond
 	notFull  *cond
