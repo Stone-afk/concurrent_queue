@@ -19,8 +19,12 @@ type LinkedBlockingQueue[T any] struct {
 }
 
 func NewLinkedBlockingQueue[T any](capacity int) *LinkedBlockingQueue[T] {
-	// TODO implement me
-	panic("implement me")
+	mutex := &sync.RWMutex{}
+	return &LinkedBlockingQueue[T]{
+		mutex:      mutex,
+		maxSize:    capacity,
+		linkedlist: list.NewLinkedList[T](),
+	}
 }
 
 func (q *LinkedBlockingQueue[T]) Enqueue(ctx context.Context, data T) error {
