@@ -24,6 +24,7 @@ func NewLinkedBlockingQueue[T any](capacity int) *LinkedBlockingQueue[T] {
 		mutex:      mutex,
 		maxSize:    capacity,
 		notEmpty:   newCond(mutex),
+		notFull:    newCond(mutex),
 		linkedlist: list.NewLinkedList[T](),
 	}
 }
