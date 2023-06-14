@@ -34,6 +34,8 @@ func (q *LinkedBlockingQueue[T]) Enqueue(ctx context.Context, data T) error {
 	panic("implement me")
 }
 
+// Dequeue 出队
+// 注意：目前我们已经通过broadcast实现了超时控制
 func (q *LinkedBlockingQueue[T]) Dequeue(ctx context.Context) (T, error) {
 	// TODO implement me
 	panic("implement me")
