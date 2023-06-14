@@ -48,6 +48,10 @@ func (q *LinkedBlockingQueue[T]) Len() int {
 	panic("implement me")
 }
 
+func (q *LinkedBlockingQueue[T]) len() int {
+	return q.linkedlist.Len()
+}
+
 func (q *LinkedBlockingQueue[T]) IsEmpty() bool {
 	// TODO implement me
 	panic("implement me")
