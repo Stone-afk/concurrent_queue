@@ -66,3 +66,8 @@ func (q *LinkedBlockingQueue[T]) IsFull() bool {
 	// TODO implement me
 	panic("implement me")
 }
+
+func (q *LinkedBlockingQueue[T]) isFull() bool {
+	// TODO implement me
+	panic("implement me")
+}
