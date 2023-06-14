@@ -29,6 +29,8 @@ func NewLinkedBlockingQueue[T any](capacity int) *LinkedBlockingQueue[T] {
 	}
 }
 
+// Enqueue 入队
+// 注意：目前我们已经通过broadcast实现了超时控制
 func (q *LinkedBlockingQueue[T]) Enqueue(ctx context.Context, data T) error {
 	// TODO implement me
 	panic("implement me")
