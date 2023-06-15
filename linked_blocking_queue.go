@@ -67,6 +67,5 @@ func (q *LinkedBlockingQueue[T]) IsFull() bool {
 }
 
 func (q *LinkedBlockingQueue[T]) isFull() bool {
-	// TODO implement me
-	panic("implement me")
+	return q.linkedlist.Len() == q.maxSize
 }
