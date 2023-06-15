@@ -58,8 +58,7 @@ func (q *LinkedBlockingQueue[T]) IsEmpty() bool {
 }
 
 func (q *LinkedBlockingQueue[T]) isEmpty() bool {
-	// TODO implement me
-	panic("implement me")
+	return q.linkedlist.Len() == 0
 }
 
 func (q *LinkedBlockingQueue[T]) IsFull() bool {
