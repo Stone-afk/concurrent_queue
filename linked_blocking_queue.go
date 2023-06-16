@@ -53,8 +53,9 @@ func (q *LinkedBlockingQueue[T]) len() int {
 }
 
 func (q *LinkedBlockingQueue[T]) IsEmpty() bool {
-	// TODO implement me
-	panic("implement me")
+	q.mutex.RLock()
+	defer q.mutex.RUnlock()
+	return q.isEmpty()
 }
 
 func (q *LinkedBlockingQueue[T]) isEmpty() bool {
