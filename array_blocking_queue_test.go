@@ -29,7 +29,7 @@ func TestArrayBlockingQueueV2_Enqueue(t *testing.T) {
 			q:       NewArrayBlockingQueueV2[int](10),
 			value:   1,
 			timeout: time.Minute,
-			data:    []int{1},
+			data:    []int{1, 0, 0, 0, 0, 0, 0, 0, 0, 0},
 		},
 		{
 			name: "blocking and timeout",
