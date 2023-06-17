@@ -30,12 +30,20 @@ func (q *LinkedQueue[T]) Enqueue(ctx context.Context, data T) error {
 		if ctx.Err() != nil {
 			return ctx.Err()
 		}
+
+		// 通过原子操作把队尾拿出来
+		// CAS 操作，如果当前的队尾指针就是上面取到的指针，那么把队尾换成新的结点
+
 		// select tail; => tail = 4
 		tailPtr := atomic.LoadPointer(&q.tail)
 		// 为什么不能这样写？
 		// tail = c.tail // 这种是非线程安全
 		// Update Set tail = 3 WHERE tail = 4
 		if atomic.CompareAndSwapPointer(&q.tail, tailPtr, newNodePtr) {
+
+			// CAS 返回成功，说明队尾没变，可以直接修改
+			// 把新结点接到原来的队尾结点上去
+
 			// 在这一步，就要讲 tail.next 指向 c.tail
 			// tail.next = c.tail
 			tailNode := (*node[T])(tailPtr)
@@ -62,6 +70,8 @@ func (q *LinkedQueue[T]) Enqueue(ctx context.Context, data T) error {
 		//		return nil
 		//	}
 		//}
+
+		// CAS 返回失败，说明队尾变了，其他想要入队的，已经抢先入队而且完成了，那就要重头再来
 	}
 }
 
