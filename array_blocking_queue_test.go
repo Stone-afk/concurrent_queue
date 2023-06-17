@@ -11,6 +11,56 @@ import (
 	"time"
 )
 
+func TestArrayBlockingQueueV2_Enqueue(t *testing.T) {
+	testCases := []struct {
+		name string
+
+		q *ArrayBlockingQueueV2[int]
+
+		timeout time.Duration
+		value   int
+
+		data []int
+
+		wantErr error
+	}{
+		{
+			name:    "enqueue",
+			q:       NewArrayBlockingQueueV2[int](10),
+			value:   1,
+			timeout: time.Minute,
+			data:    []int{1},
+		},
+		{
+			name: "blocking and timeout",
+			q: func() *ArrayBlockingQueueV2[int] {
+				res := NewArrayBlockingQueueV2[int](2)
+				ctx, cancel := context.WithTimeout(context.Background(), time.Second)
+				defer cancel()
+				err := res.Enqueue(ctx, 1)
+				require.NoError(t, err)
+				err = res.Enqueue(ctx, 2)
+				require.NoError(t, err)
+				return res
+			}(),
+			value:   3,
+			timeout: time.Second,
+			data:    []int{1, 2},
+			wantErr: context.DeadlineExceeded,
+		},
+	}
+
+	for _, tc := range testCases {
+		t.Run(tc.name, func(t *testing.T) {
+			ctx, cancel := context.WithTimeout(context.Background(), tc.timeout)
+			defer cancel()
+			err := tc.q.Enqueue(ctx, tc.value)
+			assert.Equal(t, tc.wantErr, err)
+			assert.Equal(t, tc.data, tc.q.data)
+		})
+	}
+}
+
 func TestArrayBlockingQueueV2(t *testing.T) {
 	// 只能确保没有死锁
 	q := NewArrayBlockingQueueV2[int](10000)
