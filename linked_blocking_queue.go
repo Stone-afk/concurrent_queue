@@ -44,8 +44,9 @@ func (q *LinkedBlockingQueue[T]) Dequeue(ctx context.Context) (T, error) {
 }
 
 func (q *LinkedBlockingQueue[T]) Len() int {
-	// TODO implement me
-	panic("implement me")
+	q.mutex.RLock()
+	defer q.mutex.RUnlock()
+	return q.len()
 }
 
 func (q *LinkedBlockingQueue[T]) len() int {
