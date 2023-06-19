@@ -114,10 +114,11 @@ func (q *LinkedQueue[T]) Dequeue(ctx context.Context) (T, error) {
 	// CAS 返回失败，说明队头变了，其他想要出队的，已经抢先出队而且完成了，那就要重头再来
 }
 
-func (q *LinkedQueue[T]) IsFull() bool {
-	// TODO implement me
-	panic("implement me")
-}
+// TODO 无最大容量限制
+//func (q *LinkedQueue[T]) IsFull() bool {
+//	// TODO implement me
+//	panic("implement me")
+//}
 
 func (q *LinkedQueue[T]) IsEmpty() bool {
 	return atomic.LoadUint64(&q.count) == 0
