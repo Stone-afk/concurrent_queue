@@ -32,13 +32,14 @@ func (q *LinkedQueue[T]) Enqueue(ctx context.Context, data T) error {
 		}
 
 		// 通过原子操作把队尾拿出来
-		// CAS 操作，如果当前的队尾指针就是上面取到的指针，那么把队尾换成新的结点
-
 		// select tail; => tail = 4
 		tailPtr := atomic.LoadPointer(&q.tail)
+
 		// 为什么不能这样写？
 		// tail = c.tail // 这种是非线程安全
 		// Update Set tail = 3 WHERE tail = 4
+
+		// CAS 操作，如果当前的队尾指针就是上面取到的指针，那么把队尾换成新的结点
 		if atomic.CompareAndSwapPointer(&q.tail, tailPtr, newNodePtr) {
 
 			// CAS 返回成功，说明队尾没变，可以直接修改
@@ -85,6 +86,8 @@ func (q *LinkedQueue[T]) Dequeue(ctx context.Context) (T, error) {
 		headNode := (*node[T])(headPtr)
 		tailPtr := atomic.LoadPointer(&q.tail)
 		tailNode := (*node[T])(tailPtr)
+
+		//   检查队列是否为空;
 		if headNode == tailNode {
 			// 不需要做更多检测，在当下这一刻，我们就认为没有元素，即便这时候正好有人入队
 			// 但是并不妨碍我们在它彻底入队完成——即所有的指针都调整好——之前，
@@ -92,14 +95,23 @@ func (q *LinkedQueue[T]) Dequeue(ctx context.Context) (T, error) {
 			var t T
 			return t, ErrEmptyQueue
 		}
+
+		// 通过原子操作把队头节点拿出来
 		headNextPtr := atomic.LoadPointer(&headNode.next)
-		// 如果到这里为空了，CAS 操作不会成功。因为原本的数据，被人拿走了
+
+		// CAS 操作 (如果当前的队头节点就是上面取到的节点，那么把队头换成当前队头节点的下一个节
 		if atomic.CompareAndSwapPointer(&q.head, headPtr, headNextPtr) {
+
+			//CAS 返回成功, 说明队头没变，可以直接修改, 把对头换成当前对头节点的下一个节点,
+			// 返回当前对头节点。
+
 			headNextNode := (*node[T])(headNextPtr)
 			// TODO TestLinkedQueue 测试这一步貌似出现问题
 			return headNextNode.val, nil
 		}
 	}
+
+	// CAS 返回失败，说明队头变了，其他想要出队的，已经抢先出队而且完成了，那就要重头再来
 }
 
 func (q *LinkedQueue[T]) IsFull() bool {
