@@ -72,3 +72,8 @@ func (q *LinkedBlockingQueue[T]) IsFull() bool {
 func (q *LinkedBlockingQueue[T]) isFull() bool {
 	return q.linkedlist.Len() == q.maxSize
 }
+
+func (q *LinkedBlockingQueue[T]) AsSlice() []T {
+	// TODO implement me
+	panic("implement me")
+}
