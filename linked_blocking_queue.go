@@ -32,8 +32,24 @@ func NewLinkedBlockingQueue[T any](capacity int) *LinkedBlockingQueue[T] {
 // Enqueue 入队
 // 注意：目前我们已经通过broadcast实现了超时控制
 func (q *LinkedBlockingQueue[T]) Enqueue(ctx context.Context, data T) error {
-	// TODO implement me
-	panic("implement me")
+	if ctx.Err() != nil {
+		return ctx.Err()
+	}
+	q.mutex.Lock()
+	for q.maxSize > 0 && q.isFull() {
+		signal := q.notFull.signalCh()
+		select {
+		case <-ctx.Done():
+			return ctx.Err()
+		case <-signal:
+			q.mutex.Lock()
+		}
+	}
+	err := q.linkedlist.Append(data)
+
+	// 这里会释放锁
+	q.notEmpty.broadcast()
+	return err
 }
 
 // Dequeue 出队
