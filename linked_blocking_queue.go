@@ -74,6 +74,7 @@ func (q *LinkedBlockingQueue[T]) isFull() bool {
 }
 
 func (q *LinkedBlockingQueue[T]) AsSlice() []T {
-	// TODO implement me
-	panic("implement me")
+	q.mutex.RLock()
+	defer q.mutex.RUnlock()
+	return q.linkedlist.AsSlice()
 }
