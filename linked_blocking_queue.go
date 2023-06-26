@@ -71,6 +71,8 @@ func (q *LinkedBlockingQueue[T]) Dequeue(ctx context.Context) (T, error) {
 		}
 	}
 	val, err := q.linkedlist.Delete(0)
+	// 这里会释放锁
+	q.notFull.broadcast()
 
 	return val, err
 }
