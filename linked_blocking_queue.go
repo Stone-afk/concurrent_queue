@@ -61,6 +61,9 @@ func (q *LinkedBlockingQueue[T]) Dequeue(ctx context.Context) (T, error) {
 		return t, ctx.Err()
 	}
 	q.mutex.Lock()
+	for q.isEmpty() {
+
+	}
 	return t, nil
 }
 
