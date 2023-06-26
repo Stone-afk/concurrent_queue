@@ -55,23 +55,24 @@ func (q *LinkedBlockingQueue[T]) Enqueue(ctx context.Context, data T) error {
 // Dequeue 出队
 // 注意：目前我们已经通过broadcast实现了超时控制
 func (q *LinkedBlockingQueue[T]) Dequeue(ctx context.Context) (T, error) {
-	var t T
 	if ctx.Err() != nil {
-		var t T
-		return t, ctx.Err()
+		var val T
+		return val, ctx.Err()
 	}
 	q.mutex.Lock()
 	for q.isEmpty() {
 		signal := q.notEmpty.signalCh()
 		select {
 		case <-ctx.Done():
-			var t T
-			return t, ctx.Err()
+			var val T
+			return val, ctx.Err()
 		case <-signal:
 			q.mutex.Lock()
 		}
 	}
-	return t, nil
+	val, err := q.linkedlist.Delete(0)
+
+	return val, err
 }
 
 func (q *LinkedBlockingQueue[T]) Len() int {
