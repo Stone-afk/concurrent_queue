@@ -55,8 +55,13 @@ func (q *LinkedBlockingQueue[T]) Enqueue(ctx context.Context, data T) error {
 // Dequeue 出队
 // 注意：目前我们已经通过broadcast实现了超时控制
 func (q *LinkedBlockingQueue[T]) Dequeue(ctx context.Context) (T, error) {
-	// TODO implement me
-	panic("implement me")
+	var t T
+	if ctx.Err() != nil {
+		var t T
+		return t, ctx.Err()
+	}
+	q.mutex.Lock()
+	return t, nil
 }
 
 func (q *LinkedBlockingQueue[T]) Len() int {
