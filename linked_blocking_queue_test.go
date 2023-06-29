@@ -3,12 +3,138 @@ package concurrent_queue
 import (
 	"context"
 	"fmt"
+	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	"math/rand"
 	"sync"
 	"testing"
 	"time"
 )
+
+func TestLinkedBlockingQueue_Dequeue(t *testing.T) {
+	testCases := []struct {
+		name      string
+		q         func() *LinkedBlockingQueue[int]
+		val       int
+		timeout   time.Duration
+		wantErr   error
+		wantVal   int
+		wantSlice []int
+		wantLen   int
+	}{
+		{
+			name: "dequeued",
+			q: func() *LinkedBlockingQueue[int] {
+				q := NewLinkedBlockingQueue[int](3)
+				ctx, cancel := context.WithTimeout(context.Background(), time.Second)
+				defer cancel()
+				err := q.Enqueue(ctx, 123)
+				require.NoError(t, err)
+				err = q.Enqueue(ctx, 234)
+				require.NoError(t, err)
+				return q
+			},
+			wantVal:   123,
+			timeout:   time.Second,
+			wantSlice: []int{234},
+			wantLen:   1,
+		},
+		{
+			name: "invalid context",
+			q: func() *LinkedBlockingQueue[int] {
+				q := NewLinkedBlockingQueue[int](3)
+				ctx, cancel := context.WithTimeout(context.Background(), time.Second)
+				defer cancel()
+				err := q.Enqueue(ctx, 123)
+				require.NoError(t, err)
+				err = q.Enqueue(ctx, 234)
+				require.NoError(t, err)
+				return q
+			},
+			wantErr:   context.DeadlineExceeded,
+			timeout:   -time.Second,
+			wantSlice: []int{123, 234},
+			wantLen:   2,
+		},
+		{
+			name: "dequeue and empty first",
+			q: func() *LinkedBlockingQueue[int] {
+				q := NewLinkedBlockingQueue[int](3)
+				ctx, cancel := context.WithTimeout(context.Background(), time.Second)
+				defer cancel()
+				err := q.Enqueue(ctx, 123)
+				require.NoError(t, err)
+				return q
+			},
+			wantVal:   123,
+			timeout:   time.Second,
+			wantSlice: []int{},
+			wantLen:   0,
+		},
+		{
+			name: "dequeue and empty last",
+			q: func() *LinkedBlockingQueue[int] {
+				q := NewLinkedBlockingQueue[int](3)
+				ctx, cancel := context.WithTimeout(context.Background(), time.Second)
+				defer cancel()
+				err := q.Enqueue(ctx, 123)
+				require.NoError(t, err)
+				err = q.Enqueue(ctx, 234)
+				require.NoError(t, err)
+				err = q.Enqueue(ctx, 345)
+				require.NoError(t, err)
+				val, err := q.Dequeue(ctx)
+				require.NoError(t, err)
+				require.Equal(t, 123, val)
+				val, err = q.Dequeue(ctx)
+				require.NoError(t, err)
+				require.Equal(t, 234, val)
+				return q
+			},
+			wantVal:   345,
+			timeout:   time.Second,
+			wantSlice: []int{},
+			wantLen:   0,
+		},
+	}
+
+	for _, tc := range testCases {
+		t.Run(tc.name, func(t *testing.T) {
+			ctx, cancel := context.WithTimeout(context.Background(), tc.timeout)
+			defer cancel()
+			q := tc.q()
+			val, err := q.Dequeue(ctx)
+			assert.Equal(t, tc.wantErr, err)
+			assert.Equal(t, tc.wantVal, val)
+			assert.Equal(t, tc.wantSlice, q.AsSlice())
+			assert.Equal(t, tc.wantLen, q.Len())
+		})
+	}
+
+	t.Run("dequeue timeout", func(t *testing.T) {
+		q := NewLinkedBlockingQueue[int](3)
+		ctx, cancel := context.WithTimeout(context.Background(), time.Second)
+		defer cancel()
+		val, err := q.Dequeue(ctx)
+		require.Equal(t, context.DeadlineExceeded, err)
+		require.Equal(t, 0, val)
+	})
+
+	// 出队阻塞，然后入队，然后出队成功
+	t.Run("dequeue blocking and enqueue", func(t *testing.T) {
+		q := NewLinkedBlockingQueue[int](3)
+		ctx, cancel := context.WithTimeout(context.Background(), time.Second)
+		defer cancel()
+		go func() {
+			time.Sleep(time.Millisecond * 100)
+			err := q.Enqueue(ctx, 123)
+			require.NoError(t, err)
+		}()
+		val, err := q.Dequeue(ctx)
+		require.NoError(t, err)
+		require.Equal(t, 123, val)
+	})
+}
 
 func TestLinkedBlockingQueue(t *testing.T) {
 	// 并发测试，只是测试有没有死锁之类的问题
