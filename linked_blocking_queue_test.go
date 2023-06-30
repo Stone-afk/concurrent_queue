@@ -11,6 +11,121 @@ import (
 	"time"
 )
 
+func TestConcurrentLinkedBlockingQueue_Enqueue(t *testing.T) {
+	testCases := []struct {
+		name      string
+		q         func() *ConcurrentLinkedBlockingQueue[int]
+		val       int
+		timeout   time.Duration
+		wantErr   error
+		wantSlice []int
+		wantLen   int
+	}{
+		{
+			name: "empty and enqueued",
+			q: func() *ConcurrentLinkedBlockingQueue[int] {
+				return NewConcurrentLinkedBlockingQueue[int](3)
+			},
+			val:       123,
+			timeout:   time.Second,
+			wantSlice: []int{123},
+			wantLen:   1,
+		},
+		{
+			name: "invalid context",
+			q: func() *ConcurrentLinkedBlockingQueue[int] {
+				return NewConcurrentLinkedBlockingQueue[int](3)
+			},
+			val:       123,
+			timeout:   -time.Second,
+			wantSlice: []int{},
+			wantErr:   context.DeadlineExceeded,
+		},
+		{
+			// 入队之后就满了，恰好放在切片的最后一个位置
+			name: "enqueued full last index",
+			q: func() *ConcurrentLinkedBlockingQueue[int] {
+				ctx, cancel := context.WithTimeout(context.Background(), time.Second)
+				defer cancel()
+				q := NewConcurrentLinkedBlockingQueue[int](3)
+				err := q.Enqueue(ctx, 123)
+				require.NoError(t, err)
+				err = q.Enqueue(ctx, 234)
+				require.NoError(t, err)
+				return q
+			},
+			val:       345,
+			timeout:   time.Second,
+			wantSlice: []int{123, 234, 345},
+			wantLen:   3,
+		},
+	}
+
+	for _, tc := range testCases {
+		t.Run(tc.name, func(t *testing.T) {
+			ctx, cancel := context.WithTimeout(context.Background(), tc.timeout)
+			defer cancel()
+			q := tc.q()
+			err := q.Enqueue(ctx, tc.val)
+			assert.Equal(t, tc.wantErr, err)
+			assert.Equal(t, tc.wantSlice, q.AsSlice())
+			assert.Equal(t, tc.wantLen, q.Len())
+		})
+	}
+
+	t.Run("enqueue timeout", func(t *testing.T) {
+		q := NewConcurrentLinkedBlockingQueue[int](3)
+		ctx, cancel := context.WithTimeout(context.Background(), time.Second)
+		defer cancel()
+		err := q.Enqueue(ctx, 123)
+		require.NoError(t, err)
+		err = q.Enqueue(ctx, 234)
+		require.NoError(t, err)
+		err = q.Enqueue(ctx, 345)
+		require.NoError(t, err)
+		err = q.Enqueue(ctx, 456)
+		require.Equal(t, context.DeadlineExceeded, err)
+	})
+
+	// 入队阻塞，而后出队，于是入队成功
+	t.Run("enqueue blocking and dequeue", func(t *testing.T) {
+		q := NewConcurrentLinkedBlockingQueue[int](3)
+		ctx, cancel := context.WithTimeout(context.Background(), time.Second)
+		defer cancel()
+		go func() {
+			time.Sleep(time.Millisecond * 100)
+			val, err := q.Dequeue(ctx)
+			require.NoError(t, err)
+			require.Equal(t, 123, val)
+		}()
+		err := q.Enqueue(ctx, 123)
+		require.NoError(t, err)
+		err = q.Enqueue(ctx, 234)
+		require.NoError(t, err)
+		err = q.Enqueue(ctx, 345)
+		require.NoError(t, err)
+		err = q.Enqueue(ctx, 456)
+		require.NoError(t, err)
+	})
+
+	// 无界的情况下，可以无限添加元素，当然小心内存, 以及goroutine调度导致的超时
+	// capacity <= 0 时，为无界队列
+	t.Run("capacity <= 0", func(t *testing.T) {
+		q := NewConcurrentLinkedBlockingQueue[int](-1)
+		for i := 0; i < 10; i++ {
+			go func() {
+				for i := 0; i < 1000; i++ {
+					ctx := context.Background()
+					val := rand.Int()
+					err := q.Enqueue(ctx, val)
+					require.NoError(t, err)
+				}
+
+			}()
+		}
+	})
+}
+
 func TestLinkedBlockingQueue_Dequeue(t *testing.T) {
 	testCases := []struct {
 		name      string
