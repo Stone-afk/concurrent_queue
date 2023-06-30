@@ -11,7 +11,7 @@ import (
 	"time"
 )
 
-func TestConcurrentLinkedBlockingQueue_Enqueue(t *testing.T) {
+func TestLinkedBlockingQueue_Enqueue(t *testing.T) {
 	testCases := []struct {
 		name      string
 		q         func() *ConcurrentLinkedBlockingQueue[int]
