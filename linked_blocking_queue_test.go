@@ -14,7 +14,7 @@ import (
 func TestLinkedBlockingQueue_Enqueue(t *testing.T) {
 	testCases := []struct {
 		name      string
-		q         func() *ConcurrentLinkedBlockingQueue[int]
+		q         func() *LinkedBlockingQueue[int]
 		val       int
 		timeout   time.Duration
 		wantErr   error
