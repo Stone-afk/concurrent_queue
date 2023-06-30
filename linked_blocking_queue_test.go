@@ -23,7 +23,7 @@ func TestLinkedBlockingQueue_Enqueue(t *testing.T) {
 	}{
 		{
 			name: "empty and enqueued",
-			q: func() *ConcurrentLinkedBlockingQueue[int] {
+			q: func() *LinkedBlockingQueue[int] {
 				return NewConcurrentLinkedBlockingQueue[int](3)
 			},
 			val:       123,
