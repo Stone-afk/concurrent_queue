@@ -47,7 +47,7 @@ func TestLinkedBlockingQueue_Enqueue(t *testing.T) {
 			q: func() *LinkedBlockingQueue[int] {
 				ctx, cancel := context.WithTimeout(context.Background(), time.Second)
 				defer cancel()
-				q := NewConcurrentLinkedBlockingQueue[int](3)
+				q := NewLinkedBlockingQueue[int](3)
 				err := q.Enqueue(ctx, 123)
 				require.NoError(t, err)
 				err = q.Enqueue(ctx, 234)
