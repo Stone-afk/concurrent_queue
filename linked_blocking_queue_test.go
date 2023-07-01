@@ -34,7 +34,7 @@ func TestLinkedBlockingQueue_Enqueue(t *testing.T) {
 		{
 			name: "invalid context",
 			q: func() *LinkedBlockingQueue[int] {
-				return NewConcurrentLinkedBlockingQueue[int](3)
+				return NewLinkedBlockingQueue[int](3)
 			},
 			val:       123,
 			timeout:   -time.Second,
