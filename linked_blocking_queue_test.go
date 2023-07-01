@@ -44,7 +44,7 @@ func TestLinkedBlockingQueue_Enqueue(t *testing.T) {
 		{
 			// 入队之后就满了，恰好放在切片的最后一个位置
 			name: "enqueued full last index",
-			q: func() *ConcurrentLinkedBlockingQueue[int] {
+			q: func() *LinkedBlockingQueue[int] {
 				ctx, cancel := context.WithTimeout(context.Background(), time.Second)
 				defer cancel()
 				q := NewConcurrentLinkedBlockingQueue[int](3)
