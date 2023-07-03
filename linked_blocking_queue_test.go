@@ -74,7 +74,7 @@ func TestLinkedBlockingQueue_Enqueue(t *testing.T) {
 	}
 
 	t.Run("enqueue timeout", func(t *testing.T) {
-		q := NewConcurrentLinkedBlockingQueue[int](3)
+		q := NewLinkedBlockingQueue[int](3)
 		ctx, cancel := context.WithTimeout(context.Background(), time.Second)
 		defer cancel()
 		err := q.Enqueue(ctx, 123)
@@ -89,7 +89,7 @@ func TestLinkedBlockingQueue_Enqueue(t *testing.T) {
 
 	// 入队阻塞，而后出队，于是入队成功
 	t.Run("enqueue blocking and dequeue", func(t *testing.T) {
-		q := NewConcurrentLinkedBlockingQueue[int](3)
+		q := NewLinkedBlockingQueue[int](3)
 		ctx, cancel := context.WithTimeout(context.Background(), time.Second)
 		defer cancel()
 		go func() {
