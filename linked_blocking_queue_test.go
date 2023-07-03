@@ -111,7 +111,7 @@ func TestLinkedBlockingQueue_Enqueue(t *testing.T) {
 	// 无界的情况下，可以无限添加元素，当然小心内存, 以及goroutine调度导致的超时
 	// capacity <= 0 时，为无界队列
 	t.Run("capacity <= 0", func(t *testing.T) {
-		q := NewConcurrentLinkedBlockingQueue[int](-1)
+		q := NewLinkedBlockingQueue[int](-1)
 		for i := 0; i < 10; i++ {
 			go func() {
 				for i := 0; i < 1000; i++ {
