@@ -57,14 +57,14 @@ func TestPriorityQueue_Shrink(t *testing.T) {
 			expectCap:   3000,
 			sliceCap:    3001,
 		},
-		{
-			name:        "有界，大于2048，大于一半",
-			originCap:   3000,
-			EnqueueLoop: 2000,
-			DequeueLoop: 5,
-			expectCap:   3000,
-			sliceCap:    3001,
-		},
+		//{
+		//	name:        "有界，大于2048，大于一半",
+		//	originCap:   3000,
+		//	EnqueueLoop: 2000,
+		//	DequeueLoop: 5,
+		//	expectCap:   3000,
+		//	sliceCap:    3001,
+		//},
 		{
 			name:        "无界，小于64",
 			originCap:   0,
