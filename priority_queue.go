@@ -52,7 +52,7 @@ func NewPriorityQueue[T any](capacity int, compare Comparator[T]) *PriorityQueue
 }
 
 func (p *PriorityQueue[T]) IsBoundless() bool {
-	panic("")
+	return p.capacity <= 0
 }
 
 func (p *PriorityQueue[T]) shrinkIfNecessary() {
