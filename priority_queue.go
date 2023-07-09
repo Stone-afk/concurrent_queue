@@ -56,7 +56,9 @@ func (p *PriorityQueue[T]) IsBoundless() bool {
 }
 
 func (p *PriorityQueue[T]) shrinkIfNecessary() {
-	panic("")
+	if p.IsBoundless() {
+
+	}
 }
 
 func (p *PriorityQueue[T]) Len() int {
@@ -127,4 +129,8 @@ func (p *PriorityQueue[T]) Dequeue() (T, error) {
 	p.data = p.data[:len(p.data)-1]
 	p.heapify(p.data, len(p.data)-1, 1)
 	return pop, nil
+}
+
+func Shrink[T any](src []T) []T {
+	panic("")
 }
