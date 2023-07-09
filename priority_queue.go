@@ -57,7 +57,7 @@ func (p *PriorityQueue[T]) IsBoundless() bool {
 
 func (p *PriorityQueue[T]) shrinkIfNecessary() {
 	if p.IsBoundless() {
-
+		p.data = Shrink[T](p.data)
 	}
 }
 
