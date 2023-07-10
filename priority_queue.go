@@ -134,3 +134,7 @@ func (p *PriorityQueue[T]) Dequeue() (T, error) {
 func Shrink[T any](src []T) []T {
 	panic("")
 }
+
+func calCapacity(c, l int) (int, bool) {
+	panic("")
+}
