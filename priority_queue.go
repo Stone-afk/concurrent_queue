@@ -132,7 +132,14 @@ func (p *PriorityQueue[T]) Dequeue() (T, error) {
 }
 
 func Shrink[T any](src []T) []T {
-	panic("")
+	c, l := cap(src), len(src)
+	n, changed := calCapacity(c, l)
+	if !changed {
+		return src
+	}
+	s := make([]T, 0, n)
+	s = append(s, src...)
+	return s
 }
 
 func calCapacity(c, l int) (int, bool) {
