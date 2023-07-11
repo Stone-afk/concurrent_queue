@@ -127,6 +127,7 @@ func (p *PriorityQueue[T]) Dequeue() (T, error) {
 	pop := p.data[1]
 	p.data[1] = p.data[len(p.data)-1]
 	p.data = p.data[:len(p.data)-1]
+	p.shrinkIfNecessary()
 	p.heapify(p.data, len(p.data)-1, 1)
 	return pop, nil
 }
