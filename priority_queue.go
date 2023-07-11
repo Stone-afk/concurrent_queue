@@ -1,5 +1,7 @@
 package concurrent_queue
 
+import "concurrent_queue/errs"
+
 // RealNumber 实数
 // 绝大多数情况下，你都应该用这个来表达数字的含义
 type RealNumber interface {
@@ -80,14 +82,14 @@ func (p *PriorityQueue[T]) IsFull() bool {
 func (p *PriorityQueue[T]) Peek() (T, error) {
 	if p.IsEmpty() {
 		var t T
-		return t, ErrEmptyQueue
+		return t, errs.ErrEmptyQueue
 	}
 	return p.data[1], nil
 }
 
 func (p *PriorityQueue[T]) Enqueue(t T) error {
 	if p.IsFull() {
-		return ErrOutOfCapacity
+		return errs.ErrOutOfCapacity
 	}
 
 	p.data = append(p.data, t)
@@ -122,7 +124,7 @@ func (p *PriorityQueue[T]) heapify(data []T, n, i int) {
 func (p *PriorityQueue[T]) Dequeue() (T, error) {
 	if p.IsEmpty() {
 		var t T
-		return t, ErrEmptyQueue
+		return t, errs.ErrEmptyQueue
 	}
 	pop := p.data[1]
 	p.data[1] = p.data[len(p.data)-1]

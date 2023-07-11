@@ -1,6 +1,7 @@
 package concurrent_queue
 
 import (
+	"concurrent_queue/errs"
 	"context"
 	"sync/atomic"
 	"unsafe"
@@ -93,10 +94,11 @@ func (q *LinkedQueue[T]) Dequeue(ctx context.Context) (T, error) {
 			// 但是并不妨碍我们在它彻底入队完成——即所有的指针都调整好——之前，
 			// 认为其实还是没有元素
 			var t T
-			return t, ErrEmptyQueue
+			return t, errs.ErrEmptyQueue
 		}
 
 		// 通过原子操作把队头节点拿出来
+		// TODO TestLinkedQueue 测试这一步貌似出现问题
 		headNextPtr := atomic.LoadPointer(&headNode.next)
 
 		// CAS 操作 (如果当前的队头节点就是上面取到的节点，那么把队头换成当前队头节点的下一个节

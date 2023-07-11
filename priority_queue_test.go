@@ -1,6 +1,7 @@
 package concurrent_queue
 
 import (
+	"concurrent_queue/errs"
 	"github.com/stretchr/testify/require"
 	"testing"
 
@@ -184,7 +185,7 @@ func TestPriorityQueue_Dequeue(t *testing.T) {
 		{
 			name:    "空队列",
 			data:    []int{},
-			wantErr: ErrEmptyQueue,
+			wantErr: errs.ErrEmptyQueue,
 		},
 		{
 			name:      "只有一个元素",
@@ -330,7 +331,7 @@ func TestPriorityQueue_Enqueue(t *testing.T) {
 			capacity: 6,
 			data:     []int{6, 5, 4, 3, 2, 1},
 			element:  10,
-			wantErr:  ErrOutOfCapacity,
+			wantErr:  errs.ErrOutOfCapacity,
 		},
 		{
 			name:     "有界非空不满队列",
@@ -374,13 +375,13 @@ func TestPriorityQueue_Peek(t *testing.T) {
 			name:     "有数据",
 			capacity: 0,
 			data:     []int{6, 5, 4, 3, 2, 1},
-			wantErr:  ErrEmptyQueue,
+			wantErr:  errs.ErrEmptyQueue,
 		},
 		{
 			name:     "无数据",
 			capacity: 0,
 			data:     []int{},
-			wantErr:  ErrEmptyQueue,
+			wantErr:  errs.ErrEmptyQueue,
 		},
 	}
 	for _, tc := range testCases {
