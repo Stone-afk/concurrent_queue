@@ -1,6 +1,7 @@
 package concurrent_queue
 
 import (
+	"concurrent_queue/errs"
 	"context"
 	"fmt"
 	"sync"
@@ -59,7 +60,7 @@ func (q *DelayQueue[T]) Enqueue(ctx context.Context, data T) error {
 			// }
 			q.EnqueueSignal.broadcast()
 			return nil
-		case ErrOutOfCapacity:
+		case errs.ErrOutOfCapacity:
 			signalCh := q.DequeueSignal.signalCh()
 			// 阻塞，开始睡觉了
 			select {
@@ -132,7 +133,7 @@ func (q *DelayQueue[T]) Dequeue(ctx context.Context) (T, error) {
 				// return val, err
 			case <-signalCh:
 			}
-		case ErrEmptyQueue:
+		case errs.ErrEmptyQueue:
 			signalCh := q.EnqueueSignal.signalCh()
 			// 阻塞，开始 sleep
 			select {

@@ -2,13 +2,7 @@ package concurrent_queue
 
 import (
 	"context"
-	"errors"
 	"time"
-)
-
-var (
-	ErrOutOfCapacity = errors.New("ekit: 超出最大容量限制")
-	ErrEmptyQueue    = errors.New("ekit: 队列为空")
 )
 
 // Queue 普通队列

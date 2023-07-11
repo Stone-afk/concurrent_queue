@@ -1,6 +1,7 @@
 package concurrent_queue
 
 import (
+	"concurrent_queue/errs"
 	"context"
 	"fmt"
 	"github.com/stretchr/testify/assert"
@@ -87,7 +88,7 @@ func TestConcurrentQueue_Dequeue(t *testing.T) {
 				q := NewLinkedQueue[int]()
 				return q
 			},
-			wantErr: ErrEmptyQueue,
+			wantErr: errs.ErrEmptyQueue,
 		},
 		{
 			name: "single",
