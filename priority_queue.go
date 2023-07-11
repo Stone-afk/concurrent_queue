@@ -8,10 +8,9 @@ type RealNumber interface {
 		~float32 | ~float64
 }
 
-//
-//type Number interface {
-//	RealNumber | ~complex64 | ~complex128
-//}
+type Number interface {
+	RealNumber | ~complex64 | ~complex128
+}
 
 // Comparator 用于比较两个对象的大小 src < dst, 返回-1，src = dst, 返回0，src > dst, 返回1
 type Comparator[T any] func(src T, dst T) int
